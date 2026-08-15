@@ -24,6 +24,9 @@ git_push.bat
 # 导出产物
 exports/
 
+# 用户保存的方案（本地数据，不上传）
+saved_solutions/
+
 # 收集的芯片资料与临时文件（不提交）
 【MSPM0G3507】官方资料/
 【MSPM0G3507】开源硬件/
