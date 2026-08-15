@@ -9,9 +9,12 @@
     浏览器打开 http://127.0.0.1:8080
 """
 import asyncio
+import csv
 import datetime
 import html as html_mod
+import io
 import json
+import re
 from typing import Any, Dict, List, Tuple
 
 from nicegui import ui
@@ -42,6 +45,13 @@ BUS_GROUP_OPTIONS = {
     "D": "共享组 D",
 }
 
+# 导出格式选项
+EXPORT_FORMATS = {
+    "json": "JSON（可再次导入）",
+    "md": "Markdown（给人看）",
+    "csv": "CSV（Excel/WPS 打开）",
+}
+
 # 默认场景 = 你的痛点场景
 DEFAULT_SCENARIO_SPEC: List[Tuple[str, int]] = [
     ("i2c_screen", 1),
@@ -63,6 +73,7 @@ current_solutions: List[Any] = []
 current_spec: List[Tuple] = []
 export_dialog = None
 export_name_input = None
+export_format_select = None
 pending_export_idx = 0
 
 # 引脚下拉选项：引脚名 + 默认功能备注
@@ -107,8 +118,9 @@ def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
         pid = all_periphs[0]["id"]
     with rows_container:
         with ui.row().classes("items-center gap-2") as row:
-            sel = ui.select(periph_options, value=pid).classes("w-full max-w-xl")
-            share_sel = ui.select(BUS_GROUP_OPTIONS, value=bus_group).classes("w-64")
+            num_label = ui.label("").classes("w-6 text-right text-gray-500")
+            sel = ui.select(periph_options, value=pid).classes("w-96")
+            share_sel = ui.select(BUS_GROUP_OPTIONS, value=bus_group).classes("w-56")
             share_sel.set_visibility(pid in I2C_PERIPH_IDS)
             sel.on_value_change(lambda e: share_sel.set_visibility(e.value in I2C_PERIPH_IDS))
             cnt = ui.number("数量", value=count, min=0, max=16, format="%.0f").classes("w-24")
@@ -119,12 +131,26 @@ def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
             lock_panel = ui.column().classes("w-full gap-2")
     row_data = {"row": row, "select": sel, "share_sel": share_sel,
                 "count": cnt, "lock_btn": lock_btn, "delete_btn": delete_btn,
+                "num_label": num_label,
                 "lock_dialog": lock_dialog, "lock_panel": lock_panel,
                 "lock_text": lock_text}
     lock_btn.set_text("🔒 已锁定" if lock_text else "🔓 未锁定")
     lock_btn.on_click(lambda: open_lock_dialog(row_data))
     delete_btn.on_click(lambda: delete_row(row_data))
     rows.append(row_data)
+    renumber_rows()
+
+
+def renumber_rows() -> None:
+    """重新编号外设行。"""
+    for idx, r in enumerate(rows, 1):
+        r["num_label"].set_text(f"{idx}.")
+
+
+def renumber_reserve_rows() -> None:
+    """重新编号保留引脚行。"""
+    for idx, r in enumerate(reserve_rows, 1):
+        r["num_label"].set_text(f"{idx}.")
 
 
 def current_reserved_pins() -> set:
@@ -309,6 +335,213 @@ def solution_to_export_rows(spec: List[Tuple], sol) -> List[Dict[str, Any]]:
     return rows_out
 
 
+def _assignment_remarks(chip: Chip, a, pin: str) -> str:
+    remarks = []
+    if a.req.locked_pins:
+        remarks.append("已锁定")
+    if a.shared:
+        remarks.append("共享总线")
+    if a.remap != 0:
+        remarks.append("重映射")
+    if pin in chip.penalty_pins:
+        remarks.append("特殊脚")
+    return "、".join(remarks)
+
+
+def _resource_summary(chip: Chip, sol) -> List[str]:
+    uarts = sorted({a.resource for a in sol.assignments if a.req.kind in ("uart", "uart_tx", "uart_rx")})
+    i2cs = sorted({a.resource for a in sol.assignments if a.req.kind == "i2c"})
+    spis = sorted({a.resource for a in sol.assignments if a.req.kind in ("spi", "spi_bus")})
+    cans = sorted({a.resource for a in sol.assignments if a.req.kind == "can"})
+    adcs = sorted({a.resource for a in sol.assignments if a.req.kind == "adc"})
+    tims = sorted({a.resource for a in sol.assignments if a.req.kind in ("timer_pwm", "timer_enc", "timer_pwm_exclusive")})
+    return [
+        f"UART: {', '.join(uarts) if uarts else '无'}",
+        f"I2C: {', '.join(i2cs) if i2cs else '无'}",
+        f"SPI: {', '.join(spis) if spis else '无'}",
+        f"CAN: {', '.join(cans) if cans else '无'}",
+        f"ADC: {', '.join(adcs) if adcs else '无'}",
+        f"定时器: {', '.join(tims) if tims else '无'}",
+    ]
+
+
+def solution_to_markdown(chip: Chip, sol, idx: int) -> str:
+    """生成人类可读的 Markdown 引脚表。"""
+    lines = [
+        f"# 引脚配置方案 {idx}（得分 {sol.score}）",
+        "",
+        "| 外设/角色 | 资源 | 引脚 | 角色 | 备注 |",
+        "|---|---|---|---|---|",
+    ]
+    for a in sol.assignments:
+        for disp, pin, role in a.pin_pairs():
+            lines.append(
+                f"| {disp} | {a.label} | {pin} | {role} | {_assignment_remarks(chip, a, pin)} |")
+    lines.append("")
+    lines.append("## 资源占用")
+    for s in _resource_summary(chip, sol):
+        lines.append(f"- {s}")
+    lines.append("")
+    lines.append("## 说明")
+    if sol.notes:
+        for n in sol.notes:
+            lines.append(f"- {n}")
+    else:
+        lines.append("- 无特殊说明")
+    lines.append("")
+    lines.append("## CubeMX 配置步骤")
+    lines.append("```text")
+    lines.append(solution_to_cubemx_steps(chip, sol, idx))
+    lines.append("```")
+    return "\n".join(lines)
+
+
+def solution_to_csv(chip: Chip, sol, idx: int) -> str:
+    """生成 CSV 引脚表（Excel/WPS 打开），末尾带资源占用和说明。"""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["方案", "得分", "外设/角色", "资源", "引脚", "角色", "备注"])
+    for a in sol.assignments:
+        for disp, pin, role in a.pin_pairs():
+            writer.writerow([idx, sol.score, disp, a.label, pin, role,
+                             _assignment_remarks(chip, a, pin)])
+    writer.writerow([])
+    writer.writerow(["资源占用"])
+    for s in _resource_summary(chip, sol):
+        writer.writerow([s])
+    writer.writerow([])
+    writer.writerow(["说明"])
+    if sol.notes:
+        for n in sol.notes:
+            writer.writerow([n])
+    else:
+        writer.writerow(["无特殊说明"])
+    return buf.getvalue()
+
+
+def _pin_sort_key(pin: str):
+    """按端口字母 + 编号排序，方便照着 CubeMX 点。"""
+    m = re.match(r"^P([A-Z])(\d+)$", pin)
+    if m:
+        return (m.group(1), int(m.group(2)))
+    return (pin, 0)
+
+
+def _signal_for_assignment(chip: Chip, a, pin: str, role: str) -> str:
+    """根据 assignment 生成 CubeMX 信号名。"""
+    res = a.resource or ""
+    k = a.req.kind
+    if k in ("uart", "uart_tx", "uart_rx"):
+        return f"{res}_{role}"
+    if k == "i2c":
+        return f"{res}_{role}"
+    if k == "spi":
+        return f"{res}_{role}"
+    if k == "spi_bus":
+        return f"{res}_{role}"
+    if k == "can":
+        return f"{res}_{role}"
+    if k == "adc":
+        return res  # 如 ADC1_IN0
+    if k in ("timer_enc", "timer_pwm", "timer_pwm_exclusive"):
+        m = re.search(r"CH(\d)", role)
+        ch = m.group(1) if m else "?"
+        return f"{res}_CH{ch}"
+    if k == "exti_gpio":
+        exti = chip.pins[pin]["exti"]
+        return f"GPIO_EXTI{exti}"
+    if k == "gpio":
+        return "GPIO_Input" if "输入" in role else "GPIO_Output"
+    return role
+
+
+def solution_to_cubemx_steps(chip: Chip, sol, idx: int) -> str:
+    """生成 CubeMX 配置步骤清单（照着点）。"""
+    lines: List[str] = []
+    lines.append(f"CubeMX 配置步骤（方案 {idx}，得分 {sol.score}）")
+    lines.append("")
+    lines.append("【基础设置】")
+    lines.append(f"1. 新建 STM32CubeMX 工程，芯片选 {chip.name}")
+    lines.append("2. System Core → SYS → Debug: Serial Wire（保留 SWD 调试）")
+    lines.append("3. RCC → HSE: Crystal/Ceramic Resonator（如果使用外部晶振）")
+    lines.append("")
+
+    # 引脚配置（去重 + 排序）
+    lines.append("【引脚配置】在 Pinout 视图里逐个左键点击引脚，选择对应信号：")
+    seen_pins: set = set()
+    pin_rows: List[Tuple[str, str]] = []
+    for a in sol.assignments:
+        for disp, pin, role in a.pin_pairs():
+            sig = _signal_for_assignment(chip, a, pin, role)
+            if (pin, sig) in seen_pins:
+                continue
+            seen_pins.add((pin, sig))
+            pin_rows.append((pin, sig))
+    pin_rows.sort(key=lambda x: _pin_sort_key(x[0]))
+    for pin, sig in pin_rows:
+        lines.append(f"  - {pin:<5} → {sig}")
+    lines.append("")
+
+    # 外设模式
+    lines.append("【外设模式】在左侧 Categories 里逐个配置：")
+    uarts = sorted({a.resource for a in sol.assignments if a.req.kind in ("uart", "uart_tx", "uart_rx")})
+    for r in uarts:
+        lines.append(f"  - {r} → Mode: Asynchronous")
+    i2cs = sorted({a.resource for a in sol.assignments if a.req.kind == "i2c"})
+    for r in i2cs:
+        lines.append(f"  - {r} → Mode: I2C")
+    spis = sorted({a.resource for a in sol.assignments if a.req.kind == "spi"})
+    for r in spis:
+        lines.append(f"  - {r} → Mode: Full-Duplex Master")
+    spi_buses = sorted({a.resource for a in sol.assignments if a.req.kind == "spi_bus"})
+    for r in spi_buses:
+        lines.append(f"  - {r} → Mode: Full-Duplex Master（NSS 用软件 GPIO，不需要硬件 NSS）")
+    cans = sorted({a.resource for a in sol.assignments if a.req.kind == "can"})
+    for r in cans:
+        lines.append(f"  - {r} → Mode: Normal")
+    adcs = sorted({a.resource for a in sol.assignments if a.req.kind == "adc"})
+    if adcs:
+        lines.append(f"  - ADC1 → 使能通道：{', '.join(adcs)}")
+    encs = sorted({a.resource for a in sol.assignments if a.req.kind == "timer_enc"})
+    for r in encs:
+        lines.append(f"  - {r} → Combined Channels: Encoder Mode")
+    pwm_timers: Dict[str, set] = {}
+    for a in sol.assignments:
+        if a.req.kind in ("timer_pwm", "timer_pwm_exclusive"):
+            for role in a.roles:
+                m = re.search(r"CH(\d)", role)
+                if m:
+                    pwm_timers.setdefault(a.resource, set()).add(m.group(1))
+    for r in sorted(pwm_timers):
+        chs = sorted(pwm_timers[r], key=int)
+        lines.append(f"  - {r} → 通道 {', '.join(chs)}: PWM Generation")
+    exti_lines = sorted({chip.pins[a.pins[0]]["exti"] for a in sol.assignments
+                         if a.req.kind == "exti_gpio" and a.pins})
+    for exti in exti_lines:
+        lines.append(f"  - NVIC → 使能 EXTI line {exti} 中断")
+    lines.append("")
+
+    # 重映射
+    remaps = []
+    for a in sol.assignments:
+        if a.remap != 0:
+            remaps.append(f"{a.label}（{a.resource}）")
+    if remaps:
+        lines.append("【重映射提醒】以下外设使用了重映射，CubeMX 中需在对应外设配置里开启 Remap：")
+        for r in sorted(set(remaps)):
+            lines.append(f"  - ⚠ {r}")
+        lines.append("")
+    else:
+        lines.append("【重映射】本方案全部使用默认引脚映射，无需额外设置。")
+        lines.append("")
+
+    lines.append("【最后检查】")
+    lines.append("1. 确认没有引脚显示红色冲突")
+    lines.append("2. 确认 GPIO 输出脚（DIR/EN/IN1/IN2 等）在 CubeMX 中已设为 GPIO_Output")
+    lines.append("3. 点击 GENERATE CODE 生成工程")
+    return "\n".join(lines)
+
+
 def ask_export(idx: int) -> None:
     """先让用户确认/修改文件名，再下载。"""
     global pending_export_idx
@@ -316,38 +549,55 @@ def ask_export(idx: int) -> None:
         ui.notify("方案不存在，请重新求解后再导出。", type="negative")
         return
     pending_export_idx = idx
-    export_name_input.value = f"方案{idx + 1}_引脚表.json"
+    export_name_input.value = f"方案{idx + 1}_引脚表"
     export_dialog.open()
 
 
 def do_export() -> None:
-    """确认文件名后执行下载。"""
+    """确认文件名和格式后执行下载。"""
     name = (export_name_input.value or "").strip()
     if not name:
         ui.notify("请输入文件名。", type="negative")
         return
-    if not name.endswith(".json"):
-        name += ".json"
-    export_solution(pending_export_idx, name)
+    fmt = export_format_select.value or "json"
+    ext_map = {"json": ".json", "md": ".md", "csv": ".csv"}
+    # 去旧后缀，换新后缀
+    base = name
+    for ext in ext_map.values():
+        if base.endswith(ext):
+            base = base[: -len(ext)]
+            break
+    filename = base + ext_map[fmt]
+    download_solution(pending_export_idx, filename, fmt)
     export_dialog.close()
 
 
-def export_solution(idx: int, filename: str) -> None:
-    """导出第 idx 套方案为 JSON 文件（浏览器下载）。"""
+def download_solution(idx: int, filename: str, fmt: str) -> None:
+    """按格式生成文件并触发浏览器下载。"""
     sol = current_solutions[idx]
-
-    data = {
-        "app": "pin_configuration_assistant",
-        "version": 1,
-        "chip": chip.id,
-        "exported_at": datetime.datetime.now().isoformat(timespec="seconds"),
-        "solution_index": idx + 1,
-        "score": sol.score,
-        "reserved": sorted(current_reserved_pins()),
-        "rows": solution_to_export_rows(current_spec, sol),
-    }
-    payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-    ui.download(payload, filename=filename, media_type="application/json")
+    if fmt == "json":
+        data = {
+            "app": "pin_configuration_assistant",
+            "version": 1,
+            "chip": chip.id,
+            "exported_at": datetime.datetime.now().isoformat(timespec="seconds"),
+            "solution_index": idx + 1,
+            "score": sol.score,
+            "reserved": sorted(current_reserved_pins()),
+            "rows": solution_to_export_rows(current_spec, sol),
+        }
+        payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+        media = "application/json"
+    elif fmt == "md":
+        payload = solution_to_markdown(chip, sol, idx + 1).encode("utf-8")
+        media = "text/markdown"
+    elif fmt == "csv":
+        payload = solution_to_csv(chip, sol, idx + 1).encode("utf-8-sig")
+        media = "text/csv"
+    else:
+        ui.notify("未知导出格式。", type="negative")
+        return
+    ui.download(payload, filename=filename, media_type=media)
     ui.notify(f"已开始下载：{filename}", type="positive")
 
 
@@ -437,6 +687,7 @@ def delete_row(row_data: Dict[str, Any]) -> None:
         row_data["row"].set_visibility(False)
     except Exception:
         pass
+    renumber_rows()
 
 
 def clear_all_rows() -> None:
@@ -468,20 +719,25 @@ def add_reserve_row(pin: str = None) -> None:
         pin = "PA0"
     with reserve_rows_container:
         with ui.row().classes("items-center gap-2") as row:
-            sel = ui.select(pin_options, value=pin).classes("w-full max-w-xl")
-            ui.button("✖", on_click=lambda: delete_reserve_row(row)).props("flat dense color=red")
-    reserve_rows.append({"row": row, "select": sel})
+            num_label = ui.label("").classes("w-6 text-right text-gray-500")
+            sel = ui.select(pin_options, value=pin).classes("w-96")
+            del_btn = ui.button("✖").props("flat dense color=red")
+    row_data = {"row": row, "select": sel, "num_label": num_label, "del_btn": del_btn}
+    del_btn.on_click(lambda: delete_reserve_row(row_data))
+    reserve_rows.append(row_data)
+    renumber_reserve_rows()
 
 
-def delete_reserve_row(row) -> None:
+def delete_reserve_row(row_data) -> None:
     """删除一行保留引脚。"""
     global reserve_rows
-    reserve_rows = [r for r in reserve_rows if r["row"] is not row]
+    reserve_rows = [r for r in reserve_rows if r["row"] is not row_data["row"]]
     try:
-        row.clear()
-        row.set_visibility(False)
+        row_data["row"].clear()
+        row_data["row"].set_visibility(False)
     except Exception:
         pass
+    renumber_reserve_rows()
 
 
 def clear_all_reserve_rows() -> None:
@@ -554,7 +810,12 @@ def on_solve() -> None:
         for i, sol in enumerate(solutions[:MAX_SHOWN], 1):
             with ui.expansion(f"方案 {i} —— 得分 {sol.score}").classes("w-full border rounded-lg"):
                 ui.html(solution_to_html(chip, sol, i)).classes("w-full")
-                ui.button(f"⬇ 导出方案{i}为JSON",
+                with ui.expansion("📋 CubeMX 配置步骤").classes("w-full border rounded"):
+                    steps = solution_to_cubemx_steps(chip, sol, i)
+                    ui.html('<pre style="background:#f6f8fa;padding:12px;border-radius:8px;'
+                            'overflow-x:auto;font-size:13px;line-height:1.45">'
+                            + html_mod.escape(steps) + "</pre>").classes("w-full")
+                ui.button(f"⬇ 导出方案{i}",
                           on_click=lambda i=i: ask_export(i - 1)).props("flat color=green")
 
 
@@ -605,8 +866,9 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
 
     # 导出文件名确认对话框
     with ui.dialog() as export_dialog, ui.card().classes("w-96"):
-        ui.label("确认导出的文件名").classes("font-bold")
+        ui.label("确认导出的文件名和格式").classes("font-bold")
         export_name_input = ui.input("文件名", value="").classes("w-full")
+        export_format_select = ui.select(EXPORT_FORMATS, value="json").classes("w-full")
         with ui.row().classes("gap-2 mt-2"):
             ui.button("确认下载", on_click=do_export).props("color=blue")
             ui.button("取消", on_click=lambda: export_dialog.close()).props("flat")
