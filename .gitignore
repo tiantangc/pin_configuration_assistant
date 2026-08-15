@@ -20,3 +20,28 @@ Thumbs.db
 
 # 本地 git 推送脚本（不上传到远程）
 git_push.bat
+
+# 导出产物
+exports/
+
+# 收集的芯片资料与临时文件（不提交）
+【MSPM0G3507】官方资料/
+【MSPM0G3507】开源硬件/
+MSPM0G3507_引脚功能详解.md
+新建 文本文档.txt
+_datasheet.txt
+_dump_words.py
+_extract_pdf.py
+_hw_manual.txt
+_img_pinout_hi.png
+_img_pinout_p1.png
+_img_schem_p1.png
+_img_schem_p2.png
+_img_schem_p3.png
+_pinout.txt
+_pinout_grid.py
+_render_pdf.py
+_render_pinout_hi.py
+_schematic.txt
+_schematic_clean.txt
+_user_manual.txt
