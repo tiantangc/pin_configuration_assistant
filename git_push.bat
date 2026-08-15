@@ -6,7 +6,9 @@ echo Repo: https://github.com/tiantangc/pin_configuration_assistant
 echo.
 git init
 git add .
-git commit -m "pin_configuration_assistant: web app with pin locking and diagnostics"
+set /p MSG=Enter commit message (e.g. update solver): 
+if "%MSG%"=="" set MSG=update
+git commit -m "%MSG%"
 git branch -M main
 git remote remove origin 2>nul
 git remote add origin https://github.com/tiantangc/pin_configuration_assistant

@@ -1,0 +1,59 @@
+{
+  "app": "pin_configuration_assistant",
+  "version": 1,
+  "chip": "STM32F103C8Tx",
+  "exported_at": "2026-08-15T19:38:25",
+  "solution_index": 3,
+  "score": 75,
+  "reserved": [
+    "PA13",
+    "PA14",
+    "PB2",
+    "PD0",
+    "PD1"
+  ],
+  "rows": [
+    {
+      "periph": "i2c_screen",
+      "count": 1,
+      "bus_group": null,
+      "lock_text": "I2C总线=PB6,I2C总线=PB7"
+    },
+    {
+      "periph": "mpu6050",
+      "count": 1,
+      "bus_group": null,
+      "lock_text": "I2C总线=PB6,I2C总线=PB7"
+    },
+    {
+      "periph": "openmv",
+      "count": 1,
+      "bus_group": null,
+      "lock_text": "串口=PA9,串口=PA10"
+    },
+    {
+      "periph": "stepper_motor",
+      "count": 3,
+      "bus_group": null,
+      "lock_text": "STEP=PA0,STEP=PA1,STEP=PA2,DIR=PB11,DIR=PB12,DIR=PB13,EN=PB14,EN=PB15,EN=PB5"
+    },
+    {
+      "periph": "car_motor",
+      "count": 2,
+      "bus_group": null,
+      "lock_text": "PWM=PB8,PWM=PB9,IN1=PA3,IN1=PA4,IN2=PB0,IN2=PB1"
+    },
+    {
+      "periph": "encoder_hw",
+      "count": 1,
+      "bus_group": null,
+      "lock_text": "编码器=PA6,编码器=PA7"
+    },
+    {
+      "periph": "encoder_gpio",
+      "count": 1,
+      "bus_group": null,
+      "lock_text": "A/B相=PA8,A/B相=PB10"
+    }
+  ]
+}

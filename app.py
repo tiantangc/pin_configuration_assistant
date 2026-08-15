@@ -8,7 +8,10 @@
     python app.py
     浏览器打开 http://127.0.0.1:8080
 """
+import asyncio
+import datetime
 import html as html_mod
+import json
 from typing import Any, Dict, List, Tuple
 
 from nicegui import ui
@@ -55,6 +58,12 @@ rows_container = None
 reserve_rows: List[Dict[str, Any]] = []
 reserve_rows_container = None
 result_html = None
+result_cards = None
+current_solutions: List[Any] = []
+current_spec: List[Tuple] = []
+export_dialog = None
+export_name_input = None
+pending_export_idx = 0
 
 # 引脚下拉选项：引脚名 + 默认功能备注
 pin_options = {}
@@ -91,7 +100,8 @@ def build_spec() -> List[Tuple]:
     return spec
 
 
-def add_row(pid: str = None, count: int = 1, bus_group: str = "auto") -> None:
+def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
+            lock_text: str = "") -> None:
     """在页面上添加一行外设选择。I2C 类外设会额外显示共享组选择。"""
     if pid is None:
         pid = all_periphs[0]["id"]
@@ -110,7 +120,8 @@ def add_row(pid: str = None, count: int = 1, bus_group: str = "auto") -> None:
     row_data = {"row": row, "select": sel, "share_sel": share_sel,
                 "count": cnt, "lock_btn": lock_btn, "delete_btn": delete_btn,
                 "lock_dialog": lock_dialog, "lock_panel": lock_panel,
-                "lock_text": ""}
+                "lock_text": lock_text}
+    lock_btn.set_text("🔒 已锁定" if lock_text else "🔓 未锁定")
     lock_btn.on_click(lambda: open_lock_dialog(row_data))
     delete_btn.on_click(lambda: delete_row(row_data))
     rows.append(row_data)
@@ -260,6 +271,159 @@ def save_locks(row_data: Dict[str, Any], lock_controls: List[Dict[str, Any]]) ->
     row_data["lock_dialog"].close()
 
 
+def solution_to_export_rows(spec: List[Tuple], sol) -> List[Dict[str, Any]]:
+    """把一套方案转成可导入的行配置：每行外设 + 全引脚锁定文本。"""
+    by_row: Dict[str, List[Any]] = {}
+    for a in sol.assignments:
+        by_row.setdefault(a.req.row_id, []).append(a)
+
+    rows_out: List[Dict[str, Any]] = []
+    for idx, item in enumerate(spec):
+        pid, cnt = item[0], item[1]
+        bg = item[2] if len(item) > 2 else None
+        row_id = f"row_{idx}"
+        row_reqs = build_requests_from_spec([(pid, cnt, bg, "")])
+        assigns = by_row.get(row_id, [])
+        used: set = set()
+        tokens: List[str] = []
+        for rq in row_reqs:
+            match = None
+            for i, a in enumerate(assigns):
+                if i in used:
+                    continue
+                if (a.req.role == rq.role and a.req.periph_name == rq.periph_name
+                        and a.req.count == rq.count and a.req.kind == rq.kind):
+                    match = a
+                    used.add(i)
+                    break
+            if match is None:
+                continue
+            for p in match.pins:
+                tokens.append(f"{rq.role}={p}")
+        rows_out.append({
+            "periph": pid,
+            "count": cnt,
+            "bus_group": bg,
+            "lock_text": ",".join(tokens),
+        })
+    return rows_out
+
+
+def ask_export(idx: int) -> None:
+    """先让用户确认/修改文件名，再下载。"""
+    global pending_export_idx
+    if idx < 0 or idx >= len(current_solutions):
+        ui.notify("方案不存在，请重新求解后再导出。", type="negative")
+        return
+    pending_export_idx = idx
+    export_name_input.value = f"方案{idx + 1}_引脚表.json"
+    export_dialog.open()
+
+
+def do_export() -> None:
+    """确认文件名后执行下载。"""
+    name = (export_name_input.value or "").strip()
+    if not name:
+        ui.notify("请输入文件名。", type="negative")
+        return
+    if not name.endswith(".json"):
+        name += ".json"
+    export_solution(pending_export_idx, name)
+    export_dialog.close()
+
+
+def export_solution(idx: int, filename: str) -> None:
+    """导出第 idx 套方案为 JSON 文件（浏览器下载）。"""
+    sol = current_solutions[idx]
+
+    data = {
+        "app": "pin_configuration_assistant",
+        "version": 1,
+        "chip": chip.id,
+        "exported_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "solution_index": idx + 1,
+        "score": sol.score,
+        "reserved": sorted(current_reserved_pins()),
+        "rows": solution_to_export_rows(current_spec, sol),
+    }
+    payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    ui.download(payload, filename=filename, media_type="application/json")
+    ui.notify(f"已开始下载：{filename}", type="positive")
+
+
+async def _read_upload(e) -> bytes:
+    """兼容不同 NiceGUI 版本的上传文件内容读取（同步/异步文件对象）。"""
+    for attr in ("file", "content"):
+        val = getattr(e, attr, None)
+        if val is None:
+            continue
+        if isinstance(val, bytes):
+            return val
+        if isinstance(val, str):
+            return val.encode("utf-8")
+        if hasattr(val, "read"):
+            data = val.read()
+            if asyncio.iscoroutine(data):
+                data = await data
+            if isinstance(data, bytes):
+                return data
+            if isinstance(data, str):
+                return data.encode("utf-8")
+            return bytes(data)
+    files = getattr(e, "files", None)
+    if isinstance(files, (list, tuple)) and files:
+        val = files[0]
+        if isinstance(val, bytes):
+            return val
+        if hasattr(val, "read"):
+            data = val.read()
+            if asyncio.iscoroutine(data):
+                data = await data
+            if isinstance(data, bytes):
+                return data
+            if isinstance(data, str):
+                return data.encode("utf-8")
+    raise ValueError("无法读取上传文件内容")
+
+
+async def handle_import(e) -> None:
+    """导入方案 JSON：重建页面行，所有引脚全部锁定。"""
+    try:
+        data = json.loads((await _read_upload(e)).decode("utf-8"))
+    except Exception as exc:
+        ui.notify(f"文件读取失败：{exc}", type="negative")
+        return
+
+    if data.get("chip") != chip.id:
+        ui.notify(f"该方案属于芯片 {data.get('chip')}，当前芯片是 {chip.id}，无法导入。", type="negative")
+        return
+
+    rows_data = data.get("rows", [])
+    if not rows_data:
+        ui.notify("文件中没有可导入的外设行。", type="negative")
+        return
+
+    clear_all_rows()
+    for r in rows_data:
+        pid = r.get("periph")
+        cnt = int(r.get("count", 1))
+        bg = r.get("bus_group") or "auto"
+        lock_text = r.get("lock_text") or ""
+        add_row(pid, cnt, bg, lock_text)
+
+    # 恢复保留引脚（导出文件里有 reserved 字段就按文件恢复，包括为空的情况）
+    reserved = data.get("reserved", None)
+    if reserved is not None:
+        clear_all_reserve_rows()
+        for pin in reserved:
+            add_reserve_row(pin)
+
+    ui.notify(
+        f"导入成功：{len(rows_data)} 行外设（全部锁定），保留引脚 {len(reserved) if reserved is not None else '按当前页面保留'} 个。"
+        "可继续添加外设后点「自动分配」。",
+        type="positive")
+
+
 def delete_row(row_data: Dict[str, Any]) -> None:
     """删除一行（含该行的锁定对话框）。"""
     global rows
@@ -340,17 +504,23 @@ def load_default_reserve() -> None:
 
 
 def on_solve() -> None:
+    global current_solutions, current_spec
     spec = build_spec()
     if not spec:
+        current_solutions = []
+        current_spec = []
         result_html.set_content('<p style="color:#c0392b">请至少选择一个外设（数量大于 0）。</p>')
+        result_cards.clear()
         return
 
     try:
         requests = build_requests_from_spec(spec)
     except ValueError as exc:
+        current_solutions = []
         result_html.set_content(
             f'<p style="color:#c0392b;font-weight:bold">❌ 锁定引脚设置错误：</p><p>{html_mod.escape(str(exc))}</p>'
         )
+        result_cards.clear()
         return
 
     reserved = [r["select"].value for r in reserve_rows if r["select"].value]
@@ -359,6 +529,7 @@ def on_solve() -> None:
     solutions = solver.solve(requests)
 
     if not solutions:
+        current_solutions = []
         reasons = diagnose_no_solution(chip, requests, reserved)
         items = "".join(f"<li>{r}</li>" for r in reasons)
         result_html.set_content(
@@ -366,12 +537,25 @@ def on_solve() -> None:
             f"<ul>{items}</ul>"
             "<p>通用建议：减少外设数量、合并共享总线/定时器，或改用软件模拟（软件 I2C / 软件 PWM / GPIO 模拟编码器）。</p>"
         )
+        result_cards.clear()
         return
 
-    html_parts = [f'<h3 style="margin:0 0 8px">✅ 找到 {len(solutions)} 套方案，显示前 {min(3, len(solutions))} 套：</h3>']
-    for i, sol in enumerate(solutions[:3], 1):
-        html_parts.append(solution_to_html(chip, sol, i))
-    result_html.set_content("".join(html_parts))
+    current_solutions = solutions
+    current_spec = spec
+    MAX_SHOWN = 12
+    result_html.set_content(
+        f'<h3 style="margin:0 0 8px">✅ 找到 {len(solutions)} 套方案，'
+        f'显示前 {min(MAX_SHOWN, len(solutions))} 套（点击方框展开查看详情）</h3>'
+    )
+
+    # 方案卡片：折叠展示，点开看引脚配置和导出按钮
+    result_cards.clear()
+    with result_cards:
+        for i, sol in enumerate(solutions[:MAX_SHOWN], 1):
+            with ui.expansion(f"方案 {i} —— 得分 {sol.score}").classes("w-full border rounded-lg"):
+                ui.html(solution_to_html(chip, sol, i)).classes("w-full")
+                ui.button(f"⬇ 导出方案{i}为JSON",
+                          on_click=lambda i=i: ask_export(i - 1)).props("flat color=green")
 
 
 # ---------------------------------------------------------------- 页面
@@ -390,6 +574,8 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
             ui.button("➕ 添加外设", on_click=lambda: add_row()).props("flat color=blue")
             ui.button("载入示例场景", on_click=load_default_scenario).props("flat color=green")
             ui.button("清空", on_click=clear_all_rows).props("flat color=grey")
+            ui.upload(on_upload=handle_import, auto_upload=True,
+                      label="📥 导入方案 JSON").props("flat color=orange")
         ui.markdown(
             "每一行：下拉框选外设/功能，数量填几个就加几个（如 GPIO输出 × 3、UART仅RX × 1）。"
             "**PWM 类（步进/电机/舵机/PWM）每一行 = 一个频率组**：组内共用一颗定时器（同频率），不同行独立调速。"
@@ -414,6 +600,16 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
     ui.button("自动分配", on_click=on_solve).classes("bg-blue-500 text-white text-lg px-6 py-2")
 
     result_html = ui.html("<p style='color:#888'>点击“自动分配”查看结果。</p>").classes("w-full")
+    with ui.column().classes("w-full gap-2") as result_cards:
+        pass
+
+    # 导出文件名确认对话框
+    with ui.dialog() as export_dialog, ui.card().classes("w-96"):
+        ui.label("确认导出的文件名").classes("font-bold")
+        export_name_input = ui.input("文件名", value="").classes("w-full")
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("确认下载", on_click=do_export).props("color=blue")
+            ui.button("取消", on_click=lambda: export_dialog.close()).props("flat")
 
     # 页面打开时默认载入你的痛点场景和默认保留引脚
     load_default_scenario()
