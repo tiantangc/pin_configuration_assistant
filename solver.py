@@ -108,6 +108,7 @@ class Chip:
         self.groups: Dict[str, Any] = data.get("peripheral_groups", {})
         self.default_reserved: set = set(data.get("reserved_pins_by_default", []))
         self.penalty_pins: Dict[str, str] = data.get("penalty_pins", {})
+        self.board_penalty_pins: Dict[str, str] = data.get("board_penalty_pins", {})
 
     # ----- 基础候选 -----
 
@@ -556,8 +557,11 @@ class Solver:
         cands.sort(key=lambda c: (c.get("remap", 0), self._cand_penalty(c)))
         return cands
 
-    def _cand_penalty(self, cand: Dict[str, Any]) -> int:
-        return sum(1 for p in cand.get("pins", []) if p in self.chip.penalty_pins)
+    def _cand_penalty(self, cand: Dict[str, Any]):
+        """候选排序惩罚：优先避开板级特殊脚，其次普通特殊脚。"""
+        board = sum(1 for p in cand.get("pins", []) if p in self.chip.board_penalty_pins)
+        normal = sum(1 for p in cand.get("pins", []) if p in self.chip.penalty_pins)
+        return (board, normal)
 
     # ----- 硬约束应用 -----
 
@@ -757,7 +761,10 @@ class Solver:
             if a.req.kind == "timer_enc":
                 score += 3
             for p in a.pins:
-                if p in self.chip.penalty_pins:
+                if p in self.chip.board_penalty_pins:
+                    score -= 6
+                    notes.append(f"{p} 为板级特殊脚（{self.chip.board_penalty_pins[p]}）")
+                elif p in self.chip.penalty_pins:
                     score -= 3
                     notes.append(f"{p} 为特殊脚（{self.chip.penalty_pins[p]}）")
         # 保留高级定时器 TIM1 加分
@@ -1280,7 +1287,9 @@ def format_solution(chip: Chip, sol: Solution, idx: int) -> str:
                 remark.append("共享总线")
             if a.remap != 0:
                 remark.append("重映射")
-            if pin in chip.penalty_pins:
+            if pin in chip.board_penalty_pins:
+                remark.append("板级特殊")
+            elif pin in chip.penalty_pins:
                 remark.append("特殊脚")
             pin_str = f"{pin}({role})"
             lines.append(f"{disp:<22}{resource:<20}{pin_str:<26}{','.join(remark):<10}")

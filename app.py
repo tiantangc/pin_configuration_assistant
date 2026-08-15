@@ -343,7 +343,9 @@ def _assignment_remarks(chip: Chip, a, pin: str) -> str:
         remarks.append("共享总线")
     if a.remap != 0:
         remarks.append("重映射")
-    if pin in chip.penalty_pins:
+    if pin in chip.board_penalty_pins:
+        remarks.append("板级特殊")
+    elif pin in chip.penalty_pins:
         remarks.append("特殊脚")
     return "、".join(remarks)
 
@@ -540,6 +542,143 @@ def solution_to_cubemx_steps(chip: Chip, sol, idx: int) -> str:
     lines.append("2. 确认 GPIO 输出脚（DIR/EN/IN1/IN2 等）在 CubeMX 中已设为 GPIO_Output")
     lines.append("3. 点击 GENERATE CODE 生成工程")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- 引脚图
+
+KIND_COLORS = {
+    "uart": "#3b82f6", "uart_tx": "#3b82f6", "uart_rx": "#3b82f6",
+    "i2c": "#22c55e",
+    "spi": "#a855f7", "spi_bus": "#a855f7",
+    "can": "#78350f",
+    "timer_enc": "#f97316", "timer_pwm": "#f97316", "timer_pwm_exclusive": "#f97316",
+    "adc": "#eab308",
+    "exti_gpio": "#ec4899",
+    "gpio": "#6b7280",
+}
+
+# 你的 C8T6 最小系统板：2×20 排针，调试排针（PA13/PA14）在右边
+BOARD_ROW1 = ["G", "G", "3.3V", "RST", "B11", "B10", "B1", "B0", "A7", "A6",
+              "A5", "A4", "A3", "A2", "A1", "A0", "C15", "C14", "C13", "VB"]
+BOARD_ROW2 = ["B12", "B13", "B14", "B15", "A8", "A9", "A10", "A11", "A12",
+              "A15", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "5V", "G", "3.3V"]
+
+
+def _norm_board_pin(pin: str) -> str:
+    """把板子丝印缩写成标准引脚名，方便查颜色。"""
+    if pin in ("G", "3.3V", "5V"):
+        return pin
+    if pin == "VB":
+        return "VBAT"
+    if pin == "RST":
+        return "NRST"
+    if re.match(r"^[ABC]\d+$", pin):
+        return "P" + pin
+    return pin
+
+
+def _pin_colors(sol) -> Dict[str, str]:
+    colors: Dict[str, str] = {}
+    for a in sol.assignments:
+        color = KIND_COLORS.get(a.req.kind, "#6b7280")
+        for p in a.pins:
+            colors[p] = color
+    return colors
+
+
+def _pin_color(pin: str, sol_colors: Dict[str, str], reserved: set, chip: Chip) -> str:
+    if pin in sol_colors:
+        return sol_colors[pin]
+    if pin in reserved:
+        return "#ef4444"  # 保留 = 红
+    info = chip.pins.get(pin)
+    if info and info.get("gpio"):
+        return "#e5e7eb"  # 空闲可用 = 浅灰
+    return "#9ca3af"  # 电源/晶振/调试专用 = 深灰
+
+
+def _legend_svg(x: float, y: float) -> str:
+    items = [
+        ("#3b82f6", "UART"), ("#22c55e", "I2C"), ("#a855f7", "SPI"),
+        ("#f97316", "定时器"), ("#eab308", "ADC"), ("#ec4899", "EXTI"),
+        ("#6b7280", "GPIO"), ("#ef4444", "保留"), ("#e5e7eb", "空闲"),
+        ("#9ca3af", "电源/专用"),
+    ]
+    parts = []
+    cx = x
+    for color, label in items:
+        parts.append(f'<rect x="{cx}" y="{y}" width="10" height="10" fill="{color}" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 12}" y="{y + 9}" font-size="9" fill="#111827">{label}</text>')
+        cx += 52
+    return "".join(parts)
+
+
+def chip_pinout_svg(chip: Chip, sol, reserved: set) -> str:
+    """LQFP48 芯片封装引脚图。"""
+    pin_nums = chip.data.get("package_pin_numbers", {})
+    sol_colors = _pin_colors(sol)
+    parts = ['<svg viewBox="0 0 640 680" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:640px;height:auto">']
+    parts.append('<rect width="640" height="680" fill="white"/>')
+    parts.append('<rect x="110" y="110" width="420" height="420" rx="10" fill="#f3f4f6" stroke="#9ca3af"/>')
+    parts.append('<text x="320" y="300" text-anchor="middle" font-size="14" fill="#374151">STM32F103C8T6</text>')
+    parts.append('<text x="320" y="320" text-anchor="middle" font-size="12" fill="#6b7280">LQFP48</text>')
+    parts.append('<circle cx="110" cy="110" r="4" fill="#374151"/>')
+
+    def pin(n: int, x: float, y: float, w: float, h: float,
+            tx: float, ty: float, anchor: str):
+        name = pin_nums.get(str(n), "?")
+        color = _pin_color(name, sol_colors, reserved, chip)
+        parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{color}" '
+                     f'stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{tx}" y="{ty}" text-anchor="{anchor}" font-size="8" '
+                     f'fill="#111827">{name}</text>')
+
+    for i in range(12):  # 顶边 1-12
+        pin(i + 1, 130 + i * 34, 78, 16, 32, 138 + i * 34, 74, "middle")
+    for i in range(12):  # 右边 13-24
+        pin(i + 13, 540, 130 + i * 34, 32, 16, 576, 141 + i * 34, "start")
+    for i in range(12):  # 底边 25-36（右到左）
+        pin(i + 25, 526 - i * 34, 540, 16, 32, 534 - i * 34, 586, "middle")
+    for i in range(12):  # 左边 37-48（下到上）
+        pin(i + 37, 78, 526 - i * 34, 32, 16, 74, 537 - i * 34, "end")
+
+    parts.append(_legend_svg(40, 640))
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def board_pinout_svg(chip: Chip, sol, reserved: set) -> str:
+    """你的 C8T6 最小系统板：2×20 排针（调试排针在右），按丝印横排绘制。"""
+    sol_colors = _pin_colors(sol)
+    parts = ['<svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:400px;height:auto">']
+    parts.append('<rect width="400" height="280" fill="white"/>')
+    parts.append('<rect x="12" y="55" width="376" height="155" rx="6" fill="#d1d5db" stroke="#9ca3af"/>')
+    parts.append('<text x="200" y="70" text-anchor="middle" font-size="10" fill="#374151">'
+                 'C8T6 最小系统板（调试排针在右）</text>')
+
+    def row(pins, y):
+        for i, pin in enumerate(pins):
+            x = 20 + i * 18
+            color = _pin_color(_norm_board_pin(pin), sol_colors, reserved, chip)
+            parts.append(f'<rect x="{x}" y="{y}" width="16" height="40" fill="{color}" '
+                         f'stroke="#374151" stroke-width="0.5"/>')
+            cx = x + 8
+            cy = y + 24
+            parts.append(f'<text x="{cx}" y="{cy}" text-anchor="middle" font-size="7" '
+                         f'fill="#111827" transform="rotate(-90, {cx}, {cy})">{pin}</text>')
+
+    row(BOARD_ROW1, 90)
+    row(BOARD_ROW2, 155)
+    parts.append('<text x="4" y="110" text-anchor="middle" font-size="8" fill="#374151" '
+                 'transform="rotate(-90, 4, 110)">第一排</text>')
+    parts.append('<text x="4" y="175" text-anchor="middle" font-size="8" fill="#374151" '
+                 'transform="rotate(-90, 4, 175)">第二排</text>')
+
+    parts.append(_legend_svg(20, 235))
+    parts.append('</svg>')
+    return "".join(parts)
 
 
 def ask_export(idx: int) -> None:
@@ -807,6 +946,7 @@ def on_solve() -> None:
     # 方案卡片：折叠展示，点开看引脚配置和导出按钮
     result_cards.clear()
     with result_cards:
+        reserved_set = set(reserved)
         for i, sol in enumerate(solutions[:MAX_SHOWN], 1):
             with ui.expansion(f"方案 {i} —— 得分 {sol.score}").classes("w-full border rounded-lg"):
                 ui.html(solution_to_html(chip, sol, i)).classes("w-full")
@@ -815,6 +955,10 @@ def on_solve() -> None:
                     ui.html('<pre style="background:#f6f8fa;padding:12px;border-radius:8px;'
                             'overflow-x:auto;font-size:13px;line-height:1.45">'
                             + html_mod.escape(steps) + "</pre>").classes("w-full")
+                with ui.expansion("🔲 芯片引脚图（LQFP48）").classes("w-full border rounded"):
+                    ui.html(chip_pinout_svg(chip, sol, reserved_set)).classes("w-full")
+                with ui.expansion("🔌 最小系统板引脚图（Blue Pill）").classes("w-full border rounded"):
+                    ui.html(board_pinout_svg(chip, sol, reserved_set)).classes("w-full")
                 ui.button(f"⬇ 导出方案{i}",
                           on_click=lambda i=i: ask_export(i - 1)).props("flat color=green")
 
