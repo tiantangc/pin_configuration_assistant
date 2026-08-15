@@ -1,0 +1,2 @@
+{"seq":0,"time":1786806839740,"type":"workflow-started","data":{"runId":"run-da8bbf15-bea0-4e4c-9c91-1b0afc48ea3a","workflow":"env-check"}}
+{"seq":1,"time":1786806841485,"type":"workflow-failed","data":{"error":"forbidden restricted workflow token: require"}}

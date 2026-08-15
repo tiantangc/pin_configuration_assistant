@@ -1,0 +1,13 @@
+{
+  "name": "inspect-wf",
+  "description": "inspect wf",
+  "phases": [
+    "run"
+  ],
+  "readOnly": true,
+  "maxAgents": 1,
+  "maxConcurrency": 1,
+  "patterns": [
+    "fan-out-and-synthesize"
+  ]
+}

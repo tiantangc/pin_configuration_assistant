@@ -1,0 +1,25 @@
+{
+  "format": "dsh.workflow",
+  "version": 1,
+  "workflowApiVersion": 1,
+  "minDshVersion": "0.0.1-rc.2",
+  "manifest": {
+    "name": "inspect-env",
+    "description": "inspect",
+    "phases": [
+      "run"
+    ],
+    "readOnly": true,
+    "maxAgents": 1,
+    "maxConcurrency": 1,
+    "patterns": [
+      "fan-out-and-synthesize"
+    ]
+  },
+  "source": "async function run(wf, args) { return { platform: process.platform, cwd: process.cwd(), type: typeof require }; }",
+  "provenance": {
+    "createdAt": "2026-08-15T14:22:46.600Z",
+    "dshVersion": "0.0.1-rc.2",
+    "pluginVersion": "0.1.2"
+  }
+}

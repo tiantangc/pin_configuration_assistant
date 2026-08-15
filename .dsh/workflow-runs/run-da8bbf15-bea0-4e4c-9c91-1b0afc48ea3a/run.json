@@ -1,0 +1,75 @@
+{
+  "runId": "run-da8bbf15-bea0-4e4c-9c91-1b0afc48ea3a",
+  "workflow": "env-check",
+  "displayName": "env-check",
+  "status": "failed",
+  "source": "inline",
+  "execution": "capability-generated",
+  "startedAt": 1786806839737,
+  "totalSpawned": 0,
+  "activeAgents": 0,
+  "eventCount": 2,
+  "artifacts": [],
+  "process": {
+    "runId": "run-da8bbf15-bea0-4e4c-9c91-1b0afc48ea3a",
+    "workflowName": "env-check",
+    "status": "failed",
+    "startedAt": "2026-08-15T15:13:59.737Z",
+    "updatedAt": "2026-08-15T15:14:01.486Z",
+    "items": [
+      {
+        "id": "phase:1",
+        "title": "run",
+        "kind": "phase",
+        "status": "skipped"
+      }
+    ],
+    "counts": {
+      "pending": 0,
+      "running": 0,
+      "completed": 0,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 1
+    },
+    "progress": {
+      "spawnedAgents": 0,
+      "finishedAgents": 0,
+      "activeAgents": 0,
+      "failedAgents": 0,
+      "stoppedAgents": 0,
+      "replayedAgents": 0
+    }
+  },
+  "error": "forbidden restricted workflow token: require",
+  "endedAt": 1786806841486,
+  "cost": {
+    "wallClockDurationMs": 1749,
+    "agentsStarted": 0,
+    "agentsCompleted": 0,
+    "cacheHits": 0,
+    "tokenUsage": 0,
+    "peakConcurrency": 0
+  },
+  "outcome": {
+    "runId": "run-da8bbf15-bea0-4e4c-9c91-1b0afc48ea3a",
+    "status": "failed",
+    "summary": "forbidden restricted workflow token: require",
+    "results": [],
+    "artifacts": [],
+    "coverage": [],
+    "unresolved": [],
+    "errors": [
+      {
+        "message": "forbidden restricted workflow token: require"
+      }
+    ],
+    "usage": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "cacheReadTokens": 0,
+      "totalTokens": 0,
+      "totalSpawned": 0
+    }
+  }
+}

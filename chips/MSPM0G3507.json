@@ -1,0 +1,150 @@
+{
+  "id": "MSPM0G3507",
+  "name": "MSPM0G3507",
+  "package": "LQFP64",
+  "family": "MSPM0G",
+  "description": "TI MSPM0G3507 天猛星开发板主控，80MHz Cortex-M0+，60 GPIO",
+  "timer_channels_per_group": 2,
+  "pins": {
+    "PA0":  {"gpio": true, "exti": "PA0",  "adc": null, "notes": ["5V 容限开漏"]},
+    "PA1":  {"gpio": true, "exti": "PA1",  "adc": null, "notes": ["5V 容限开漏"]},
+    "PA2":  {"gpio": true, "exti": "PA2",  "adc": null, "notes": ["ROSC，天猛星标注特殊勿用"]},
+    "PA3":  {"gpio": true, "exti": "PA3",  "adc": null, "notes": ["LFXIN，板载 32.768k 晶振"]},
+    "PA4":  {"gpio": true, "exti": "PA4",  "adc": null, "notes": ["LFXOUT，板载 32.768k 晶振"]},
+    "PA5":  {"gpio": true, "exti": "PA5",  "adc": null, "notes": ["HFXIN，板载 40MHz 晶振"]},
+    "PA6":  {"gpio": true, "exti": "PA6",  "adc": null, "notes": ["HFXOUT，板载 40MHz 晶振"]},
+    "PA7":  {"gpio": true, "exti": "PA7",  "adc": null, "notes": []},
+    "PA8":  {"gpio": true, "exti": "PA8",  "adc": null, "notes": []},
+    "PA9":  {"gpio": true, "exti": "PA9",  "adc": null, "notes": ["高速 IO"]},
+    "PA10": {"gpio": true, "exti": "PA10", "adc": null, "notes": ["高驱动，天猛星标注特殊勿用"]},
+    "PA11": {"gpio": true, "exti": "PA11", "adc": null, "notes": ["高驱动，天猛星标注特殊勿用"]},
+    "PA12": {"gpio": true, "exti": "PA12", "adc": null, "notes": ["高速 IO"]},
+    "PA13": {"gpio": true, "exti": "PA13", "adc": null, "notes": ["高速 IO"]},
+    "PA14": {"gpio": true, "exti": "PA14", "adc": ["A0_12"], "notes": ["高速 IO"]},
+    "PA15": {"gpio": true, "exti": "PA15", "adc": ["A1_0"], "notes": ["DAC_OUT"]},
+    "PA16": {"gpio": true, "exti": "PA16", "adc": ["A1_1"], "notes": []},
+    "PA17": {"gpio": true, "exti": "PA17", "adc": ["A1_2"], "notes": ["带唤醒功能"]},
+    "PA18": {"gpio": true, "exti": "PA18", "adc": ["A1_3"], "notes": ["带唤醒功能，BSL 调用脚，天猛星标注特殊勿用"]},
+    "PA19": {"gpio": true, "exti": "PA19", "adc": null, "notes": ["SWDIO，调试数据口"]},
+    "PA20": {"gpio": true, "exti": "PA20", "adc": null, "notes": ["SWCLK，调试时钟口"]},
+    "PA21": {"gpio": true, "exti": "PA21", "adc": ["A1_7"], "notes": ["VREF-，天猛星标注特殊勿用"]},
+    "PA22": {"gpio": true, "exti": "PA22", "adc": ["A0_7"], "notes": []},
+    "PA23": {"gpio": true, "exti": "PA23", "adc": null, "notes": ["VREF+，天猛星标注特殊勿用"]},
+    "PA24": {"gpio": true, "exti": "PA24", "adc": ["A0_3"], "notes": []},
+    "PA25": {"gpio": true, "exti": "PA25", "adc": ["A0_2"], "notes": []},
+    "PA26": {"gpio": true, "exti": "PA26", "adc": ["A0_1"], "notes": []},
+    "PA27": {"gpio": true, "exti": "PA27", "adc": ["A0_0"], "notes": []},
+    "PA28": {"gpio": true, "exti": "PA28", "adc": null, "notes": ["高驱动"]},
+    "PA29": {"gpio": true, "exti": "PA29", "adc": null, "notes": []},
+    "PA30": {"gpio": true, "exti": "PA30", "adc": null, "notes": []},
+    "PA31": {"gpio": true, "exti": "PA31", "adc": null, "notes": ["高驱动"]},
+    "PB0":  {"gpio": true, "exti": "PB0",  "adc": null, "notes": []},
+    "PB1":  {"gpio": true, "exti": "PB1",  "adc": null, "notes": []},
+    "PB2":  {"gpio": true, "exti": "PB2",  "adc": null, "notes": []},
+    "PB3":  {"gpio": true, "exti": "PB3",  "adc": null, "notes": []},
+    "PB4":  {"gpio": true, "exti": "PB4",  "adc": null, "notes": []},
+    "PB5":  {"gpio": true, "exti": "PB5",  "adc": null, "notes": []},
+    "PB6":  {"gpio": true, "exti": "PB6",  "adc": null, "notes": []},
+    "PB7":  {"gpio": true, "exti": "PB7",  "adc": null, "notes": []},
+    "PB8":  {"gpio": true, "exti": "PB8",  "adc": null, "notes": []},
+    "PB9":  {"gpio": true, "exti": "PB9",  "adc": null, "notes": []},
+    "PB10": {"gpio": true, "exti": "PB10", "adc": null, "notes": []},
+    "PB11": {"gpio": true, "exti": "PB11", "adc": null, "notes": []},
+    "PB12": {"gpio": true, "exti": "PB12", "adc": null, "notes": []},
+    "PB13": {"gpio": true, "exti": "PB13", "adc": null, "notes": []},
+    "PB14": {"gpio": true, "exti": "PB14", "adc": null, "notes": []},
+    "PB15": {"gpio": true, "exti": "PB15", "adc": null, "notes": []},
+    "PB16": {"gpio": true, "exti": "PB16", "adc": null, "notes": []},
+    "PB17": {"gpio": true, "exti": "PB17", "adc": ["A1_4"], "notes": []},
+    "PB18": {"gpio": true, "exti": "PB18", "adc": ["A1_5"], "notes": []},
+    "PB19": {"gpio": true, "exti": "PB19", "adc": ["A1_6"], "notes": []},
+    "PB20": {"gpio": true, "exti": "PB20", "adc": ["A0_6"], "notes": []},
+    "PB21": {"gpio": true, "exti": "PB21", "adc": null, "notes": []},
+    "PB22": {"gpio": true, "exti": "PB22", "adc": null, "notes": []},
+    "PB23": {"gpio": true, "exti": "PB23", "adc": null, "notes": []},
+    "PB24": {"gpio": true, "exti": "PB24", "adc": ["A0_5"], "notes": []},
+    "PB25": {"gpio": true, "exti": "PB25", "adc": ["A0_4"], "notes": []},
+    "PB26": {"gpio": true, "exti": "PB26", "adc": null, "notes": []},
+    "PB27": {"gpio": true, "exti": "PB27", "adc": null, "notes": []}
+  },
+  "peripheral_groups": {
+    "UART": {
+      "UART0": {"label": "UART0", "tx": ["PA0", "PA10", "PA28", "PB0"], "rx": ["PA1", "PA11", "PA31", "PB1"]},
+      "UART1": {"label": "UART1", "tx": ["PA8", "PA17", "PB4", "PB6"], "rx": ["PA9", "PA18", "PB5", "PB7"]},
+      "UART2": {"label": "UART2", "tx": ["PA21", "PA23", "PB15", "PB17"], "rx": ["PA22", "PA24", "PB16", "PB18"]},
+      "UART3": {"label": "UART3", "tx": ["PA14", "PA26", "PB2", "PB12"], "rx": ["PA13", "PA25", "PB3", "PB13"]}
+    },
+    "I2C": {
+      "I2C0": {"label": "I2C0", "scl": ["PA1", "PA11", "PA31"], "sda": ["PA0", "PA10", "PA28"]},
+      "I2C1": {"label": "I2C1", "scl": ["PA4", "PA11", "PA15", "PA17", "PA29", "PB2"], "sda": ["PA3", "PA10", "PA16", "PA18", "PA30", "PB3"]}
+    },
+    "SPI": {
+      "SPI0": {"label": "SPI0", "pico": ["PA5", "PA9", "PA14", "PB17"], "poci": ["PA4", "PA10", "PA13", "PB19"], "sck": ["PA6", "PA11", "PA12", "PB18"], "cs": ["PA2", "PA8", "PB25", "PA3", "PB6", "PB24", "PB26", "PA24", "PB7", "PB20", "PA23", "PB14"]},
+      "SPI1": {"label": "SPI1", "pico": ["PA18", "PB8", "PB15", "PB22"], "poci": ["PA16", "PB7", "PB14", "PB21"], "sck": ["PA17", "PB9", "PB16", "PB23"], "cs": ["PA2", "PA26", "PB6", "PB20", "PA27", "PB17", "PB27", "PA15", "PB0", "PB18", "PA25", "PB1", "PB14"]}
+    },
+    "CAN": {
+      "CANFD": {"label": "CAN-FD", "tx": ["PA12", "PA26"], "rx": ["PA13", "PA27"]}
+    },
+    "TIMER": {
+      "TIMA0": {"label": "TIMA0", "channels": {
+        "C0": ["PA0", "PA8", "PA21", "PB8", "PB14"],
+        "C1": ["PA1", "PA3", "PA7", "PA9", "PA22", "PB9", "PB12", "PB20"],
+        "C2": ["PA3", "PA7", "PA10", "PA15", "PB0", "PB4", "PB12", "PB17", "PB20"],
+        "C3": ["PA4", "PA12", "PA17", "PA23", "PA25", "PA28", "PB2", "PB13", "PB24", "PB26"]
+      }},
+      "TIMA1": {"label": "TIMA1", "channels": {
+        "C0": ["PA10", "PA15", "PA17", "PA28", "PB0", "PB2", "PB4", "PB17", "PB26"],
+        "C1": ["PA11", "PA16", "PA18", "PA24", "PA31", "PB1", "PB3", "PB5", "PB18", "PB27"]
+      }},
+      "TIMG0": {"label": "TIMG0", "channels": {
+        "C0": ["PA5", "PA12", "PA23", "PB10"],
+        "C1": ["PA6", "PA13", "PA24", "PB11"]
+      }},
+      "TIMG6": {"label": "TIMG6", "channels": {
+        "C0": ["PA5", "PA21", "PA29", "PB2", "PB6", "PB10", "PB26"],
+        "C1": ["PA6", "PA22", "PA30", "PB3", "PB7", "PB11", "PB27"]
+      }},
+      "TIMG7": {"label": "TIMG7", "channels": {
+        "C0": ["PA3", "PA17", "PA23", "PA26", "PA28", "PB15"],
+        "C1": ["PA2", "PA4", "PA7", "PA18", "PA24", "PA27", "PA31", "PB16", "PB19"]
+      }},
+      "TIMG8": {"label": "TIMG8", "channels": {
+        "C0": ["PA1", "PA3", "PA5", "PA7", "PA21", "PA23", "PA26", "PA29", "PB6", "PB10", "PB15", "PB21"],
+        "C1": ["PA0", "PA2", "PA4", "PA6", "PA22", "PA27", "PA30", "PB7", "PB11", "PB16", "PB19", "PB22"]
+      }},
+      "TIMG12": {"label": "TIMG12", "channels": {
+        "C0": ["PA10", "PA14", "PB13", "PB20"],
+        "C1": ["PA25", "PA31", "PB14", "PB24"]
+      }}
+    }
+  },
+  "reserved_pins_by_default": [
+    "PA19", "PA20",
+    "PA2", "PA10", "PA11", "PA18", "PA21", "PA23",
+    "PA3", "PA4", "PA5", "PA6"
+  ],
+  "penalty_pins": {},
+  "board_penalty_pins": {},
+  "board_layout": {
+    "columns": [
+      ["G", "A26", "A24", "B24", "A22", "A15", "A17", "B18", "A21", "A23", "3V3", "5V", "B22", "G", "B01", "A07", "B14", "A18", "3V3", "5V"],
+      ["G", "A27", "A25", "B25", "B20", "A14", "A16", "B17", "B19", "A02", "G", "G", "B21", "A30", "B00", "B10", "B11", "RST", "G", "G"],
+      ["G", "A28", "A31", "B04", "B05", "A10", "A11", "B12", "B13", "CLK", "3V3", "5V", "B07", "B09", "A13", "B26", "A29", "CHIP", "3V3", "5V"],
+      ["G", "A00", "A01", "A08", "A09", "B15", "B16", "B02", "B03", "DIO", "G", "G", "B06", "B08", "A12", "B23", "B27", "AGND", "G", "G"]
+    ],
+    "norm": {
+      "A00": "PA0", "A01": "PA1", "A02": "PA2", "A07": "PA7", "A08": "PA8", "A09": "PA9",
+      "A10": "PA10", "A11": "PA11", "A12": "PA12", "A13": "PA13", "A14": "PA14", "A15": "PA15",
+      "A16": "PA16", "A17": "PA17", "A18": "PA18", "A21": "PA21", "A22": "PA22", "A23": "PA23",
+      "A24": "PA24", "A25": "PA25", "A26": "PA26", "A27": "PA27", "A28": "PA28", "A29": "PA29",
+      "A30": "PA30", "A31": "PA31",
+      "B00": "PB0", "B01": "PB1", "B02": "PB2", "B03": "PB3", "B04": "PB4", "B05": "PB5",
+      "B06": "PB6", "B07": "PB7", "B08": "PB8", "B09": "PB9", "B10": "PB10", "B11": "PB11",
+      "B12": "PB12", "B13": "PB13", "B14": "PB14", "B15": "PB15", "B16": "PB16", "B17": "PB17",
+      "B18": "PB18", "B19": "PB19", "B20": "PB20", "B21": "PB21", "B22": "PB22", "B23": "PB23",
+      "B24": "PB24", "B25": "PB25", "B26": "PB26", "B27": "PB27",
+      "DIO": "PA19", "CLK": "PA20", "RST": "NRST", "CHIP": "VREF_CHIP", "AGND": "AGND",
+      "G": "G", "3V3": "3V3", "5V": "5V"
+    }
+  }
+}

@@ -1,0 +1,3156 @@
+===== PAGE 12 =====
+6.2 引脚属性
+下表介绍了每个器件封装中每个引脚上可用的功能。
+备注
+器件上的每个数字 I/O 均映射到一个特定的引脚控制管理寄存器 (PINCMx)，此寄存器让用户能够使用 
+PINCM.PF 控制位来配置所需的引脚功能。
+表 6-1. 引脚属性
+PINCMx
+引脚名
+称
+信号名称
+引脚编号
+IO 结构
+模拟
+数字 [引脚功能] (1)
+64 LQFP
+48 LQFP、VQFN
+32 VQFN
+28 VSSOP
+不适用
+VDD
+40
+6
+4
+7
+电源
+不适用
+VSS
+41
+7
+5
+8
+电源
+不适用
+VCORE
+32
+48
+32
+3
+电源
+不适用
+NRST
+38
+4
+3
+6
+复位
+1
+PA0
+UART0_TX [2] / I2C0_SDA [3] / TIMA0_C0 [4] / TIMA_FAL1 
+[5] / TIMG8_C1 [6] / FCC_IN [7]
+33
+1
+1
+4
+5V 容限开
+漏
+2
+PA1
+UART0_RX [2] / I2C0_SCL [3] / TIMA0_C1 [4] / TIMA_FAL2 
+[5] / TIMG8_IDX [6] / TIMG8_C0 [7]
+34
+2
+2
+5
+5V 容限开
+漏
+3
+PA28
+UART0_TX [2] / I2C0_SDA [3] / TIMA0_C3 [4] / TIMA_FAL0 
+[5] / TIMG7_C0 [6] / TIMA1_C0 [ 7]
+35
+3
+–
+-
+高驱动
+4
+PA29
+I2C1_SCL [2] / UART2_RTS [3] / TIMG8_C0 [4] / 
+TIMG6_C0 [5]
+36
+–
+-
+-
+标准
+5
+PA30
+I2C1_SDA [2] / UART2_CTS [3] / TIMG8_C1 [4] / 
+TIMG6_C1 [5]
+37
+-
+-
+-
+标准
+6
+PA31
+UART0_RX [2] / I2C0_SCL [3] / TIMA0_C3N [4] / 
+TIMG12_C1 [5] / CLK_OUT [6]/ TIMG7_C1 [7] / TIMA1_C1 
+[8]
+39
+5
+-
+-
+高驱动
+7
+PA2
+ROSC
+TIMG8_C1 [2] / SPI0_CS0 [3] / TIMG7_C1 [4] / SPI1_CS0 
+[5]
+42
+8
+6
+9
+标准
+8
+PA3
+LFXIN
+TIMG8_C0 [2] / SPI0_CS1 [3] / UART2_CTS [4] / 
+TIMA0_C2 [5] / COMP1_OUT [6] / TIMG7_C0 [7] / 
+TIMA0_C1 [8] / I2C1_SDA [9]
+43
+9
+7
+10
+标准
+9
+PA4
+LFXOUT
+TIMG8_C1 [2] / SPI0_POCI [3] / UART2_RTS [4] / 
+TIMA0_C3 [5] / LFCLK_IN [6] / TIMG7_C1 [7] / TIMA0_C1N 
+[8] / I2C1_SCL [9]
+44
+10
+8
+11
+标准
+10
+PA5
+HFXIN
+TIMG8_C0 [2] / SPI0_PICO [3] / TIMA_FAL1 [4] / 
+TIMG0_C0 [5] / TIMG6_C0 [6] / FCC_IN [7]
+45
+11
+9
+12
+标准
+11
+PA6
+HFXOUT
+TIMG8_C1 [2] / SPI0_SCK [3] / TIMA_FAL0 [4] / TIMG0_C1 
+[5] / HFCLK_IN [6] / TIMG6_C1 [ 7] / TIMA0_C2N [8]
+46
+12
+10
+13
+标准
+12
+PB0
+UART0_TX [2] / SPI1_CS2 [3] / TIMA1_C0 [4] / TIMA0_C2 
+[5]
+47
+–
+-
+-
+标准
+13
+PB1
+UART0_RX [2] / SPI1_CS3 [3] / TIMA1_C1 [4] / 
+TIMA0_C2N [5]
+48
+-
+-
+-
+标准
+14
+PA7
+COMP0_OUT [2] / CLK_OUT [3] / TIMG8_C0 [4] / 
+TIMA0_C2 [5] / TIMG8_IDX [6] / TIMG7_C1 [7] / TIMA0_C1 
+[8]
+49
+13
+11
+–
+标准
+15
+PB2
+UART3_TX [2] / UART2_CTS [3] / I2C1_SCL [4] / 
+TIMA0_C3 [5] / UART1_CTS [6] / TIMG6_C0 [ 7] / 
+TIMA1_C0 [8]
+50
+14
+-
+-
+标准
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+12
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 13 =====
+表 6-1. 引脚属性 (continued)
+PINCMx
+引脚名
+称
+信号名称
+引脚编号
+IO 结构
+模拟
+数字 [引脚功能] (1)
+64 LQFP
+48 LQFP、VQFN
+32 VQFN
+28 VSSOP
+16
+PB3
+UART3_RX [2] / UART2_RTS [3] / I2C1_SDA [4] / 
+TIMA0_C3N[5] / UART1_RTS [6] / TIMG6_C1 [7] / 
+TIMA1_C1 [8]
+51
+15
+-
+-
+标准
+17
+PB4
+UART1_TX [2] / UART3_CTS [3] / TIMA1_C0 [4] /
+TIMA0_C2 [5] / TIMA1_C0N [6]
+52
+-
+-
+-
+标准
+18
+PB5
+UART1_RX [2] / UART3_RTS [3] / TIMA1_C1 [4] / 
+TIMA0_C2N [5] / TIMA1_C1N [6]
+53
+-
+-
+-
+标准
+19
+PA8
+UART1_TX [2] / SPI0_CS0 [3] / UART0_RTS [4] / 
+TIMA0_C0 [5] / TIMA1_C0N [6]
+54
+16
+12
+-
+标准
+20
+PA9
+UART1_RX [2] / SPI0_PICO [3] / UART0_CTS [4] / 
+TIMA0_C1 [5] / RTC_OUT [6] / TIMA0_C0N [7] / 
+TIMA1_C1N [8] / CLK_OUT[9]
+55
+17
+13
+14
+高速
+21
+PA10
+UART0_TX [2] / SPI0_POCI [3] / I2C0_SDA [4] / TIMA1_C0 
+[5] / TIMG12_C0 [6] / TIMA0_C2 [7] / I2C1_SDA [8] / 
+CLK_OUT [9]
+56
+18
+14
+15
+高驱动
+22
+PA11
+UART0_RX [2] / SPI0_SCK [3] / I2C0_SCL [4] / TIMA1_C1 
+[5] / COMP0_OUT [6]/ TIMA0_C2N [7] / I2C1_SCL [8]
+57
+19
+15
+16
+高驱动
+23
+PB6
+UART1_TX [2] / SPI1_CS0 [3] / SPI0_CS1 [4] / TIMG8_C0 
+[5] / UART2_CTS [6] / TIMG6_C0 [7] / TIMA1_C0N [8]
+58
+20
+–
+-
+标准
+24
+PB7
+UART1_RX [2] / SPI1_POCI [3] / SPI0_CS2 [4] / 
+TIMG8_C1 [5] / UART2_RTS [6] / TIMG6_C1 [7] /
+TIMA1_C1N [8]
+59
+21
+–
+-
+标准
+25
+PB8
+UART1_CTS [2] / SPI1_PICO [3] / TIMA0_C0 [4] / 
+COMP1_OUT [5]
+60
+22
+–
+-
+标准
+26
+PB9
+UART1_RTS [2] / SPI1_SCK [3] / TIMA0_C1 [4] / 
+TIMA0_C0N [5]
+61
+23
+–
+-
+标准
+27
+PB10
+TIMG0_C0 [2] / TIMG8_C0 [3] / COMP1_OUT [4] / 
+TIMG6_C0 [5]
+62
+-
+-
+-
+标准
+28
+PB11
+TIMG0_C1 [2] / TIMG8_C1 [3] / CLK_OUT [4] / TIMG6_C1 
+[5]
+63
+-
+-
+-
+标准
+29
+PB12
+UART3_TX [2] / TIMA0_C2 [3] / TIMA_FAL1 [4] / 
+TIMA0_C1 [5]
+64
+-
+-
+-
+标准
+30
+PB13
+UART3_RX [2] / TIMA0_C3 [3] / TIMG12_C0 [4] / 
+TIMA0_C1N [5]
+1
+-
+-
+-
+标准
+31
+PB14
+SPI1_CS3 [2] / SPI1_POCI [3] / SPI0_CS3 [4] / 
+TIMG12_C1 [5] / TIMG8_IDX [6] / TIMA0_C0 [7]
+2
+24
+–
+-
+标准
+32
+PB15
+UART2_TX [2] / SPI1_PICO [3] / UART3_CTS [4] / 
+TIMG8_C0 [5] / TIMG7_C0 [6]
+3
+25
+-
+-
+标准
+33
+PB16
+UART2_RX [2] / SPI1_SCK [3] / UART3_RTS [4] / 
+TIMG8_C1 [5] / TIMG7_C1 [6]
+4
+26
+-
+-
+标准
+34
+PA12
+UART3_CTS [2] / SPI0_SCK [3] / TIMG0_C0 [4] / CAN_TX 
+[5] / TIMA0_C3 [6] / FCC_IN [7]
+5
+27
+16
+–
+高速
+35
+PA13
+COMP0_IN2-
+UART3_RTS [2] / SPI0_POCI [3] / UART3_RX [4] / 
+TIMG0_C1 [5] / CAN_RX [6] / TIMA0_C3N [7]
+6
+28
+17
+–
+高速
+36
+PA14
+COMP0_IN2+ / A0_12
+UART0_CTS [2] / SPI0_PICO [3] / UART3_TX [4] / 
+TIMG12_C0 [5] / CLK_OUT [6]
+7
+29
+18
+17
+高速
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+13
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 14 =====
+表 6-1. 引脚属性 (continued)
+PINCMx
+引脚名
+称
+信号名称
+引脚编号
+IO 结构
+模拟
+数字 [引脚功能] (1)
+64 LQFP
+48 LQFP、VQFN
+32 VQFN
+28 VSSOP
+37
+PA15
+A1_0 / DAC_OUT / 
+OPA0_IN2+ / 
+OPA1_IN2+/ 
+COMP0_IN3+ /
+COMP1_IN3+
+UART0_RTS [2] / SPI1_CS2 [3] / I2C1_SCL [4] / TIMA1_C0 
+[5] / TIMG8_IDX [6] / TIMA1_C0N [7] / TIMA0_C2 [8]
+8
+30
+19
+18
+标准
+38
+PA16
+A1_1 / OPA1_OUT
+COMP2_OUT [2] / SPI1_POCI [3] / I2C1_SDA [4] / 
+TIMA1_C1 [5] / TIMA1_C1N [6] / TIMA0_C2N [7] / FCC_IN 
+[8]
+9
+31
+20
+19
+标准
+39
+PA17
+A1_2 / OPA1_IN1- / 
+COMP0_IN1-
+UART1_TX [2] / SPI1_SCK [3] / I2C1_SCL [4] / TIMA0_C3 
+[5] / TIMG7_C0 [6] / TIMA1_C0 [7]
+10
+32
+21
+20
+具有唤醒功
+能的标准配
+置(2)
+40
+PA18
+A1_3 / OPA1_IN1+ / 
+COMP0_IN1+ / 
+GPAMP_IN-
+UART1_RX [2] / SPI1_PICO [3] / I2C1_SDA [4] / 
+TIMA0_C3N [5] / TIMG7_C1 [6] / TIMA1_C1 [7]
+11
+33
+22
+21
+具有唤醒功
+能的标准配
+置(2)
+41
+PA19
+SWDIO [2]
+12
+34
+23
+22
+高速
+42
+PA20
+SWCLK [2]
+13
+35
+24
+23
+标准
+43
+PB17
+A1_4 / COMP1_IN2-
+UART2_TX [2] / SPI0_PICO [3] / SPI1_CS1 [4] / TIMA1_C0 
+[5] / TIMA0_C2 [6]
+14
+36
+–
+-
+标准
+44
+PB18
+A1_5 / COMP1_IN2+
+UART2_RX [2] / SPI0_SCK [3] / SPI1_CS2 [4] / TIMA1_C1 
+[5] / TIMA0_C2N [6]
+15
+37
+-
+-
+标准
+45
+PB19
+A1_6 / COMP2_IN1+ / 
+OPA1_IN0+
+COMP2_OUT [2] / SPI0_POCI [3] / TIMG8_C1 [4] / 
+UART0_CTS [5] / TIMG7_C1 [6]
+16
+38
+–
+-
+标准
+46
+PA21
+A1_7 / COMP2_IN1- / 
+VREF-
+UART2_TX [2] / TIMG8_C0 [3] / UART1_CTS [4] / 
+TIMA0_C0 [5] / TIMG6_C0 [6]
+17
+39
+25
+24
+标准
+47
+PA22
+A0_7 / GPAMP_OUT / 
+OPA0_OUT
+UART2_RX [2] / TIMG8_C1 [3] / UART1_RTS [4] / 
+TIMA0_C1 [5] / CLK_OUT [6] / TIMA0_C0N [7] / TIMG6_C1 
+[8]
+18
+40
+26
+25
+标准
+48
+PB20
+A0_6 / OPA1_IN0-
+SPI0_CS2 [2] / SPI1_CS0 [3] / TIMA0_C2 [4] / TIMG12_C0 
+[5] / TIMA_FAL1 [6] / TIMA0_C1 [7] / TIMA1_C1N [8]
+19
+41
+–
+-
+标准
+49
+PB21
+COMP2_IN0+
+SPI1_POCI [2] / TIMG8_C0 [3]
+20
+–
+-
+-
+标准
+50
+PB22
+COMP2_IN0-
+SPI1_PICO [2] / TIMG8_C1 [3]
+21
+–
+-
+-
+标准
+51
+PB23
+SPI1_SCK [2] / COMP0_OUT [3] / TIMA_FAL0 [4]
+22
+–
+-
+-
+标准
+52
+PB24
+A0_5 / COMP1_IN1+
+SPI0_CS3 [2] / SPI0_CS1 [3] / TIMA0_C3 [4] / TIMG12_C1 
+[5] / TIMA0_C1N [6] / TIMA1_C0N [7]
+23
+42
+-
+-
+标准
+53
+PA23
+COMP1_IN1- / VREF+
+UART2_TX [2] / SPI0_CS3 [3] / TIMA0_C3 [4] / TIMG0_C0 
+[5] / UART3_CTS [6] / TIMG7_C0 [7]/ TIMG8_C0 [8]
+24
+43
+27
+26
+标准
+54
+PA24
+A0_3 / OPA0_IN1-
+UART2_RX [2] / SPI0_CS2 [3] / TIMA0_C3N [4] / 
+TIMG0_C1 [5] / UART3_RTS [6] / TIMG7_C1 [7] / 
+TIMA1_C1 [8]
+25
+44
+28
+27
+标准
+55
+PA25
+A0_2 / OPA0_IN1+
+UART3_RX [2] / SPI1_CS3 [3] / TIMG12_C1 [4] / 
+TIMA0_C3 [5] / TIMA0_C1N [6]
+26
+45
+29
+28
+标准
+56
+PB25
+A0_4
+UART0_CTS [2] / SPI0_CS0 [3] / TIMA_FAL2 [4]
+27
+–
+-
+-
+标准
+57
+PB26
+COMP1_IN0+
+UART0_RTS [2] / SPI0_CS1 [3] / TIMA0_C3 [4] / 
+TIMG6_C0 [5] / TIMA1_C0 [6]
+28
+-
+-
+-
+标准
+58
+PB27
+COMP1_IN0-
+COMP2_OUT [2] / SPI1_CS1 [3] / TIMA0_C3N [4] / 
+TIMG6_C1 [5] / TIMA1_C1 [6]
+29
+-
+-
+-
+标准
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+14
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 15 =====
+表 6-1. 引脚属性 (continued)
+PINCMx
+引脚名
+称
+信号名称
+引脚编号
+IO 结构
+模拟
+数字 [引脚功能] (1)
+64 LQFP
+48 LQFP、VQFN
+32 VQFN
+28 VSSOP
+59
+PA26
+A0_1 / COMP0_IN0+ / 
+OPA0_IN0+ / 
+GPAMP_IN+
+UART3_TX [2] / SPI1_CS0 [3] / TIMG8_C0 [4] / 
+TIMA_FAL0 [5] / CAN_TX [6] / TIMG7_C0 [7]
+30
+46
+30
+1
+标准
+60
+PA27
+A0_0 / COMP0_IN0- / 
+OPA0_IN0-
+RTC_OUT [2] / SPI1_CS1 [3] / TIMG8_C1 [4] / TIMA_FAL2 
+[5] / CAN_RX [6] / TIMG7_C1 [7]
+31
+47
+31
+2
+标准
+(1)
+对于模拟功能，IOMUX 中的 PINCM.PF 和 PINCM.PC 应设为 0（例如，OPA 输入/输出、COMP 输入等）。器件上的每个数字 I/O 均
+映射到一个特定的引脚控制管理寄存器 (PINCMx)，此寄存器让用户能够使用 PINCM.PF 控制位来配置所需的引脚功能。
+(2)
+具有唤醒功能的标准配置允许 I/O 将器件从 SHUTDOWN 最低功耗模式中唤醒。所有 I/O 均可配置为从较高的低功耗模式唤醒 MCU。
+有关详细信息，请参阅 MSPM0 G 系列 80MHz 微控制器技术参考手册 中的 GPIO 快速唤醒 部分。
+表 6-2. 按 IO 类型分类的数字 IO 功能
+IO 结构
+反转控制
+驱动强度控制
+迟滞控制
+上拉电阻器
+下拉电阻器
+唤醒逻辑
+标准驱动
+是
+是
+是
+带唤醒功能的标准驱动(2)
+是
+是
+是
+是
+高驱动
+是
+是
+是
+是
+是
+高速
+是
+是
+是
+是
+5V 容限开漏
+是
+是
+是
+是
+6.3 信号说明
+表 6-3. 信号说明
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+ADC
+A0_0
+31
+47
+31
+2
+I
+ADC0 模拟输入 0
+A0_1
+30
+46
+30
+1
+I
+ADC0 模拟输入 1
+A0_2
+26
+45
+29
+28
+I
+ADC0 模拟输入 2
+A0_3
+25
+44
+28
+27
+I
+ADC0 模拟输入 3
+A0_4
+27
+–
+-
+–
+I
+ADC0 模拟输入 4
+A0_5
+23
+42
+-
+–
+I
+ADC0 模拟输入 5
+A0_6
+19
+41
+–
+–
+I
+ADC0 模拟输入 6
+A0_7
+18
+40
+26
+25
+I
+ADC0 模拟输入 7
+A0_12
+7
+29
+18
+17
+I
+ADC0 模拟输入 12
+A1_0
+8
+30
+19
+18
+I
+ADC1 模拟输入 0
+A1_1
+9
+31
+20
+19
+I
+ADC1 模拟输入 1
+A1_2
+10
+32
+21
+20
+I
+ADC1 模拟输入 2
+A1_3
+11
+33
+22
+21
+I
+ADC1 模拟输入 3
+A1_4
+14
+36
+–
+–
+I
+ADC1 模拟输入 4
+A1_5
+15
+37
+-
+–
+I
+ADC1 模拟输入 5
+A1_6
+16
+38
+–
+–
+I
+ADC1 模拟输入 6
+A1_7
+17
+39
+25
+24
+I
+ADC1 模拟输入 7
+引导加载程序 
+(BSL)
+BSL_invoke
+11
+33
+22
+21
+I
+用于调用引导加载程序的输入引脚
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+15
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 16 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+BSL (I2C)
+BSLSCL
+34
+2
+2
+5
+I/O
+默认 I2C BSL 时钟
+BSLSDA
+33
+1
+1
+4
+I/O
+默认 I2C BSL 数据
+BSL (UART)
+BSLRX
+57
+19
+15
+16
+I
+默认 UART BSL 接收
+BSLTX
+56
+18
+14
+15
+O
+默认 UART BSL 发送
+CAN
+CAN_TX
+5
+30
+27
+46
+16
+30
+1
+O
+CAN-FD 发送数据
+CAN_RX
+6
+31
+28
+47
+17
+31
+2
+I
+CAN-FD 接收数据
+时钟
+CLK_OUT
+7
+18
+39
+49
+55
+56
+63
+5
+13
+17
+18
+29
+40
+11
+13
+14
+18
+26
+14
+15
+17
+25
+O
+可配置时钟输出
+HFCLK_IN
+46
+12
+10
+13
+I
+数字高频时钟输入
+HFXIN
+45
+11
+9
+12
+I
+高频晶体振荡器 HFXT 的输入
+HFXOUT
+46
+12
+10
+13
+O
+高频晶体振荡器 HFXT 的输出
+LFCLK_IN
+44
+10
+8
+11
+I
+数字低频时钟输入
+LFXIN
+43
+9
+7
+10
+I
+低频晶体振荡器 LFXT 的输入
+LFXOUT
+44
+10
+8
+11
+O
+低频晶体振荡器 LFXT 的输出
+ROSC
+42
+8
+6
+9
+I
+用于提高振荡器精度的外部电阻
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+16
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 17 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+比较器
+COMP0_IN0-
+31
+47
+31
+2
+I
+比较器 0 反相输入 0
+COMP0_IN0+
+30
+46
+30
+1
+I
+比较器 0 同相输入 0
+COMP0_IN1-
+10
+32
+21
+20
+I
+比较器 0 反相输入 1
+COMP0_IN1+
+11
+33
+22
+21
+I
+比较器 0 同相输入 1
+COMP0_IN2-
+6
+28
+17
+-
+I
+比较器 0 反相输入 2
+COMP0_IN2+
+7
+29
+18
+17
+I
+比较器 0 同相输入 2
+COMP0_IN3+
+8
+30
+19
+18
+I
+比较器 0 同相输入 3
+COMP0_OUT
+22
+49
+57
+13
+19
+11
+15
+16
+O
+比较器 0 输出
+COMP1_IN0-
+29
+-
+-
+–
+I
+比较器 1 反相输入 0
+COMP1_IN0+
+28
+-
+-
+–
+I
+比较器 1 同相输入 0
+COMP1_IN1-
+24
+43
+27
+26
+I
+比较器 1 反相输入 1
+COMP1_IN1+
+23
+42
+-
+–
+I
+比较器 1 同相输入 1
+COMP1_IN2-
+14
+36
+–
+–
+I
+比较器 1 反相输入 2
+COMP1_IN2+
+15
+37
+-
+–
+I
+比较器 1 同相输入 2
+COMP1_IN3+
+8
+30
+19
+18
+I
+比较器 1 同相输入 3
+COMP1_OUT
+43
+60
+62
+9
+22
+7
+10
+O
+比较器 1 输出
+COMP2_IN0-
+21
+–
+-
+–
+I
+比较器 2 反相输入 0
+COMP2_IN0+
+20
+–
+-
+–
+I
+比较器 2 同相输入 0
+COMP2_IN1-
+17
+39
+25
+24
+I
+比较器 2 反相输入 1
+COMP2_IN1+
+16
+38
+–
+–
+I
+比较器 2 同相输入 1
+COMP2_OUT
+9
+16
+29
+31
+38
+20
+19
+O
+比较器 2 输出
+DAC
+DAC_OUT
+8
+30
+19
+18
+O
+数模转换器 (DAC) 输出
+调试
+SWCLK
+13
+35
+24
+23
+I
+串行线调试输入时钟
+SWDIO
+12
+34
+23
+22
+I/O
+串行线调试数据输入/输出
+FCC
+FCC_IN
+5
+9
+33
+45
+1
+11
+27
+31
+1
+9
+16
+20
+4
+12
+19
+I
+频率时钟计数器输入
+通用放大器
+GPAMP_IN+
+30
+46
+30
+1
+I
+GPAMP 同相端子输入
+GPAMP_IN-
+11
+33
+22
+21
+I
+GPAMP 反相端子输入
+GPAMP_OUT
+18
+40
+26
+25
+O
+GPAMP 输出
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+17
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 18 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+GPIO
+PA0
+33
+1
+1
+4
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA1
+34
+2
+2
+5
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA2
+42
+8
+6
+9
+I/O
+通用数字 I/O
+PA3
+43
+9
+7
+10
+I/O
+通用数字 I/O
+PA4
+44
+10
+8
+11
+I/O
+通用数字 I/O
+PA5
+45
+11
+9
+12
+I/O
+通用数字 I/O
+PA6
+46
+12
+10
+13
+I/O
+通用数字 I/O
+PA7
+49
+13
+11
+–
+I/O
+通用数字 I/O
+PA8
+54
+16
+12
+–
+I/O
+通用数字 I/O
+PA9
+55
+17
+13
+14
+I/O
+通用数字 I/O
+PA10
+56
+18
+14
+15
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA11
+57
+19
+15
+16
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA12
+5
+27
+16
+–
+I/O
+通用数字 I/O
+PA13
+6
+28
+17
+-
+I/O
+通用数字 I/O
+PA14
+7
+29
+18
+17
+I/O
+通用数字 I/O
+PA15
+8
+30
+19
+18
+I/O
+通用数字 I/O
+PA16
+9
+31
+20
+19
+I/O
+通用数字 I/O
+PA17
+10
+32
+21
+20
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA18
+11
+33
+22
+21
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA19
+12
+34
+23
+22
+I/O
+通用数字 I/O
+PA20
+13
+35
+24
+23
+I/O
+通用数字 I/O
+PA21
+17
+39
+25
+24
+I/O
+通用数字 I/O
+PA22
+18
+40
+26
+25
+I/O
+通用数字 I/O
+PA23
+24
+43
+27
+26
+I/O
+通用数字 I/O
+PA24
+25
+44
+28
+27
+I/O
+通用数字 I/O
+PA25
+26
+45
+29
+28
+I/O
+通用数字 I/O
+PA26
+30
+46
+30
+1
+I/O
+通用数字 I/O
+PA27
+31
+47
+31
+2
+I/O
+通用数字 I/O
+PA28
+35
+3
+–
+–
+I/O
+可从关断状态唤醒的通用数字 I/O
+PA29
+36
+–
+-
+–
+I/O
+通用数字 I/O
+PA30
+37
+-
+-
+–
+I/O
+通用数字 I/O
+PA31
+39
+5
+-
+–
+I/O
+可从关断状态唤醒的通用数字 I/O
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+18
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 19 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+GPIO
+PB0
+47
+–
+-
+–
+I/O
+通用数字 I/O
+PB1
+48
+-
+-
+–
+I/O
+通用数字 I/O
+PB2
+50
+14
+-
+–
+I/O
+通用数字 I/O
+PB3
+51
+15
+-
+–
+I/O
+通用数字 I/O
+PB4
+52
+-
+-
+–
+I/O
+通用数字 I/O
+PB5
+53
+-
+-
+–
+I/O
+通用数字 I/O
+PB6
+58
+20
+–
+–
+I/O
+通用数字 I/O
+PB7
+59
+21
+–
+–
+I/O
+通用数字 I/O
+PB8
+60
+22
+–
+–
+I/O
+通用数字 I/O
+PB9
+61
+23
+–
+–
+I/O
+通用数字 I/O
+PB10
+62
+-
+-
+–
+I/O
+通用数字 I/O
+PB11
+63
+-
+-
+–
+I/O
+通用数字 I/O
+PB12
+64
+-
+-
+–
+I/O
+通用数字 I/O
+PB13
+1
+-
+-
+–
+I/O
+通用数字 I/O
+PB14
+2
+24
+–
+–
+I/O
+通用数字 I/O
+PB15
+3
+25
+-
+–
+I/O
+通用数字 I/O
+PB16
+4
+26
+-
+–
+I/O
+通用数字 I/O
+PB17
+14
+36
+–
+–
+I/O
+通用数字 I/O
+PB18
+15
+37
+-
+–
+I/O
+通用数字 I/O
+PB19
+16
+38
+–
+–
+I/O
+通用数字 I/O
+PB20
+19
+41
+–
+–
+I/O
+通用数字 I/O
+PB21
+20
+–
+-
+–
+I/O
+通用数字 I/O
+PB22
+21
+–
+-
+–
+I/O
+通用数字 I/O
+PB23
+22
+–
+-
+–
+I/O
+通用数字 I/O
+PB24
+23
+42
+-
+–
+I/O
+通用数字 I/O
+PB25
+27
+–
+-
+–
+I/O
+通用数字 I/O
+PB26
+28
+-
+-
+–
+I/O
+通用数字 I/O
+PB27
+29
+-
+-
+–
+I/O
+通用数字 I/O
+I2C
+I2C0_SCL
+34
+39
+57
+2
+5
+19
+2
+15
+5
+16
+I/O
+I2C0 串行时钟
+I2C0_SDA
+33
+35
+56
+1
+3
+18
+1
+14
+4
+15
+I/O
+I2C0 串行数据
+I2C1_SCL
+8
+10
+36
+44
+50
+57
+10
+14
+19
+30
+32
+8
+15
+19
+21
+11
+16
+18
+20
+I/O
+I2C1 串行时钟
+I2C1_SDA
+9
+11
+37
+43
+51
+56
+9
+15
+18
+31
+33
+7
+14
+20
+22
+10
+15
+19
+21
+I/O
+I2C1 串行数据
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+19
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 20 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+具有斩波功能
+的运算放大器
+（零漂移运算
+放大器）
+OPA0_IN0+
+30
+46
+30
+1
+I
+OPA0 同相端子输入 0
+OPA0_IN1+
+26
+45
+29
+28
+I
+OPA0 同相端子输入 1
+OPA0_IN2+
+8
+30
+19
+18
+I
+OPA0 同相端子输入 2
+OPA0_IN0-
+31
+47
+31
+2
+I
+OPA0 反相端子输入 0
+OPA0_IN1-
+25
+44
+28
+27
+I
+OPA0 反相端子输入 1
+OPA0_OUT
+18
+40
+26
+25
+O
+OPA0 输出
+OPA1_IN0+
+16
+38
+–
+–
+I
+OPA1 同相端子输入 0
+OPA1_IN1+
+11
+33
+22
+21
+I
+OPA1 同相端子输入 1
+OPA1_IN2+
+8
+30
+19
+18
+I
+OPA1 同相端子输入 2
+OPA1_IN0-
+19
+41
+–
+–
+I
+OPA1 反相端子输入 0
+OPA1_IN1-
+10
+32
+21
+20
+I
+OPA1 反相端子输入 1
+OPA1_OUT
+9
+31
+20
+19
+O
+OPA1 输出
+电源
+VSS
+41
+7
+5
+8
+P
+接地电源
+VDD
+40
+6
+4
+7
+P
+电源
+VCORE
+32
+48
+32
+3
+P
+稳压内核电源输出
+四方扁平无引
+线封装 (QFN) 
+焊盘
+–
+Pad
+Pad
+–
+P
+QFN 封装外露散热焊盘TI 建议连接至 VSS。
+RTC
+RTC_OUT
+31
+55
+17
+47
+13
+31
+2
+14
+O
+RTC 时钟输出
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+20
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 21 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+SPI
+SPI0_CS0
+27
+42
+54
+8
+16
+6
+12
+9
+I/O
+SPI0 芯片选择 0
+SPI0_CS1
+23
+28
+43
+58
+9
+20
+42
+7
+10
+I/O
+SPI0 芯片选择 1
+SPI0_CS2
+19
+25
+59
+21
+41
+44
+28
+27
+I/O
+SPI0 芯片选择 2
+SPI0_CS3
+2
+23
+24
+24
+42
+43
+27
+26
+I/O
+SPI0 芯片选择 3
+SPI0_SCK
+5
+15
+46
+57
+12
+19
+27
+37
+10
+15
+16
+13
+16
+I/O
+SPI0 时钟信号输入 – SPI 外设模式
+时钟信号输出 – SPI 控制器模式
+SPI0_POCI
+6
+16
+44
+56
+10
+18
+28
+38
+8
+14
+17
+11
+15
+I/O
+SPI0 控制器输入/外设输出
+SPI0_PICO
+7
+14
+45
+55
+11
+17
+29
+36
+9
+13
+18
+12
+14
+17
+I/O
+SPI0 控制器输出/外设输入
+SPI1_CS0
+19
+30
+42
+58
+8
+20
+41
+46
+6
+30
+1
+9
+I/O
+SPI1 芯片选择 0
+SPI1_CS1
+14
+29
+31
+36
+47
+31
+2
+I/O
+SPI1 芯片选择 1
+SPI1_CS2
+8
+15
+47
+30
+37
+19
+18
+I/O
+SPI1 芯片选择 2
+SPI1_CS3
+2
+26
+48
+24
+45
+29
+28
+I/O
+SPI1 芯片选择 3
+SPI1_SCK
+4
+10
+22
+61
+23
+26
+32
+21
+20
+I/O
+SPI1 时钟信号输入 – SPI 外设模式
+时钟信号输出 – SPI 控制器模式
+SPI1_POCI
+2
+9
+20
+59
+21
+24
+31
+20
+19
+I/O
+SPI1 控制器输入/外设输出
+SPI1_PICO
+3
+11
+21
+60
+22
+25
+33
+22
+21
+I/O
+SPI1 控制器输出/外设输入
+系统
+NRST
+38
+4
+3
+6
+I
+复位输入低电平有效
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+21
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 22 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+Timer
+TIMG0_C0
+5
+24
+45
+62
+11
+27
+43
+9
+16
+27
+12
+26
+I/O
+通用计时器 0 CCR0 捕捉输入/比较输出
+TIMG0_C1
+6
+25
+46
+63
+12
+28
+44
+10
+17
+28
+13
+27
+I/O
+通用计时器 0 CCR1 捕捉输入/比较输出
+TIMG6_C0
+17
+28
+36
+45
+50
+58
+62
+11
+14
+20
+39
+9
+25
+12
+24
+I/O
+通用计时器 6 CCR0 捕捉输入/比较输出
+TIMG6_C1
+18
+29
+37
+46
+51
+59
+63
+12
+15
+21
+40
+10
+26
+13
+25
+I/O
+通用计时器 6 CCR1 捕捉输入/比较输出
+TIMG7_C0
+3
+10
+24
+30
+35
+43
+3
+9
+25
+32
+43
+46
+7
+21
+27
+30
+1
+10
+20
+26
+I/O
+通用计时器 7 CCR1 捕捉输入/比较输出
+TIMG7_C1
+4
+11
+16
+25
+31
+39
+42
+44
+49
+5
+8
+10
+13
+26
+33
+38
+44
+47
+6
+8
+11
+22
+28
+31
+2
+9
+11
+21
+27
+I/O
+通用计时器 7 CCR1 捕捉输入/比较输出
+TIMG8_C0
+3
+17
+20
+24
+30
+34
+36
+43
+45
+49
+58
+62
+2
+9
+11
+13
+20
+25
+39
+43
+46
+2
+7
+9
+11
+25
+27
+30
+1
+5
+10
+12
+24
+26
+I/O
+通用计时器 8 CCR0 捕捉输入/比较输出
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+22
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 23 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+计时器（续）
+TIMG8_C1
+4
+16
+18
+21
+31
+33
+37
+42
+44
+46
+59
+63
+1
+8
+10
+12
+21
+26
+38
+40
+47
+1
+6
+8
+10
+26
+31
+2
+4
+9
+11
+13
+25
+I/O
+通用计时器 8 CCR1 捕捉输入/比较输出
+TIMG8_IDX
+2
+8
+34
+49
+2
+13
+24
+30
+2
+11
+19
+5
+18
+I
+通用计时器 8 正交编码器索引脉冲输入
+TIMG12_C0
+1
+7
+19
+56
+18
+29
+41
+14
+18
+15
+17
+I/O
+32 位通用计时器 0 CCR0 捕捉输入/比较输出
+TIMG12_C1
+2
+23
+26
+39
+5
+24
+42
+45
+29
+28
+I/O
+32 位通用计时器 0 CCR1 捕捉输入/比较输出
+TIMA0_C0
+2
+17
+33
+54
+60
+1
+16
+22
+24
+39
+1
+12
+25
+4
+24
+I/O
+高级控制计时器 0 CCR0 捕捉输入/比较输出
+TIMA0_C0N
+18
+55
+61
+17
+23
+40
+13
+26
+14
+25
+I/O
+高级控制计时器 0 CCR0 捕捉输入/比较输出（反相）
+TIMA0_C1
+18
+34
+43
+49
+55
+61
+64
+2
+9
+13
+17
+23
+40
+2
+7
+11
+13
+26
+5
+10
+14
+25
+I/O
+高级控制计时器 0 CCR1 捕捉输入/比较输出
+TIMA0_C1N
+1
+19
+23
+26
+44
+55
+10
+17
+41
+42
+45
+8
+13
+29
+11
+14
+28
+I/O
+高级控制计时器 0 CCR1 捕捉输入/比较输出（反相）
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+23
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 24 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+计时器（续）
+TIMA0_C2
+8
+14
+19
+43
+47
+49
+52
+56
+64
+9
+13
+18
+30
+36
+41
+7
+11
+14
+19
+10
+15
+18
+I/O
+高级控制计时器 0 CCR2 捕捉输入/比较输出
+TIMA0_C2N
+9
+15
+46
+48
+53
+57
+12
+19
+31
+37
+10
+15
+20
+13
+16
+19
+I/O
+高级控制计时器 0 CCR2 捕捉输入/比较输出（反相）
+TIMA0_C3
+1
+5
+10
+23
+24
+26
+28
+35
+44
+50
+3
+10
+14
+27
+32
+42
+43
+45
+8
+16
+21
+27
+29
+11
+20
+26
+28
+I/O
+高级控制计时器 0 CCR3 捕捉输入/比较输出
+TIMA0_C3N
+6
+11
+25
+29
+39
+51
+5
+15
+28
+33
+44
+17
+22
+28
+21
+27
+I/O
+高级控制计时器 0 CCR3 捕捉输入/比较输出（反相）
+TIMA1_C0
+8
+10
+14
+28
+35
+47
+50
+52
+56
+3
+14
+18
+30
+32
+36
+14
+19
+21
+15
+18
+20
+I/O
+高级控制计时器 1 CCR0 捕捉输入/比较输出
+TIMA1_C0N
+8
+23
+52
+54
+58
+16
+20
+30
+42
+12
+19
+18
+I/O
+高级控制计时器 0 CCR3 捕捉输入/比较输出（反相）
+TIMA1_C1
+9
+11
+15
+25
+29
+39
+48
+51
+53
+57
+5
+15
+19
+31
+33
+37
+44
+15
+20
+22
+28
+16
+19
+21
+27
+I/O
+高级控制计时器 1 CCR1 捕捉输入/比较输出
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+24
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 25 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+TIMA1_C1N
+9
+19
+53
+55
+59
+17
+21
+31
+41
+13
+20
+14
+19
+I/O
+高级控制计时器 1 CCR1 捕捉输入/比较输出（反相）
+计时器（续）
+TIMA_FAL0
+22
+30
+35
+46
+3
+12
+46
+10
+30
+1
+13
+I
+高级控制计时器 0 故障处理输入
+TIMA_FAL1
+19
+33
+45
+64
+1
+11
+41
+1
+9
+4
+12
+I
+高级控制计时器 1 故障处理输入
+TIMA_FAL2
+27
+31
+34
+2
+47
+2
+31
+2
+5
+I
+高级控制计时器 2 故障处理输入
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+25
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 26 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+UART
+UART0_TX
+33
+35
+47
+56
+1
+3
+18
+1
+14
+4
+15
+O
+UART0 发送数据
+UART0_RX
+34
+39
+48
+57
+2
+5
+19
+2
+15
+5
+16
+I
+UART0 接收数据
+UART0_CTS
+7
+16
+27
+55
+17
+29
+38
+13
+18
+14
+17
+I
+UART0“允许发送”流控制输入
+UART0_RTS
+8
+28
+54
+16
+30
+12
+19
+18
+O
+UART0“请求发送”流控制输出
+UART1_TX
+10
+52
+54
+58
+16
+20
+32
+12
+21
+20
+O
+UART1 发送数据
+UART1_RX
+11
+53
+55
+59
+17
+21
+33
+13
+22
+14
+21
+I
+UART1 接收数据
+UART1_CTS
+17
+50
+60
+14
+22
+39
+25
+24
+I
+UART1“允许发送”流控制输入
+UART1_RTS
+18
+51
+61
+15
+23
+40
+26
+25
+O
+UART1“请求发送”流控制输出
+UART2_TX
+3
+14
+17
+24
+25
+36
+39
+43
+25
+27
+24
+26
+O
+UART2 发送数据
+UART2_RX
+4
+15
+18
+25
+26
+37
+40
+44
+26
+28
+25
+27
+I
+UART2 接收数据
+UART2_CTS
+37
+43
+50
+58
+9
+14
+20
+7
+10
+I
+UART2“允许发送”流控制输入
+UART2_RTS
+36
+44
+51
+59
+10
+15
+21
+8
+11
+O
+UART2“请求发送”流控制输出
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+26
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 27 =====
+表 6-3. 信号说明 (continued)
+功能
+信号名称
+引脚编号(1)
+引脚类型(2)
+说明
+64 PM
+48 
+PT、
+RGZ
+32 
+RHB
+28 
+DGS28
+UART
+UART3_TX
+7
+30
+50
+64
+14
+29
+46
+18
+30
+1
+17
+O
+UART3 发送数据
+UART3_RX
+1
+6
+26
+51
+15
+28
+45
+17
+29
+28
+I
+UART3 接收数据
+UART3_CTS
+3
+5
+24
+52
+25
+27
+43
+16
+27
+26
+I
+UART3“允许发送”流控制输入
+UART3_RTS
+4
+6
+25
+53
+26
+28
+44
+17
+28
+27
+O
+UART3“请求发送”流控制输出
+电压基准(3)
+VREF+
+24
+43
+27
+26
+I/O
+电压基准 (VREF) 电源 - 外部基准输入/内部基准输出
+VREF-
+17
+39
+25
+24
+I/O
+电压基准 (VREF) 接地电源 - 外部基准输入/内部基准输出
+(1)
+– = 不适用
+(2)
+I = 输入，O = 输出，I/O = 输入或输出，P = 电源
+(3)
+当使用 VREF+/- 为 ADC 等模拟外设提供外部电压基准时，必须在 VREF+ 与 VREF-/GND 之间放置一个去耦电容，该电容基于外部基
+准源
+www.ti.com.cn
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+ADVANCE INFORMATION
+Copyright © 2023 Texas Instruments Incorporated
+Submit Document Feedback
+27
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+
+===== PAGE 28 =====
+6.4 未使用引脚的连接
+表 6-4 列出了未使用引脚的正确端接方式。
+表 6-4. 未使用引脚的连接
+引脚(1)
+电势
+注释
+PAx 和 PBx
+开路
+将相应的引脚功能设置为 GPIO (PINCMx.PF = 0x1) 并使用内部上
+拉/下拉电阻器将未使用的引脚配置为输出低电平或输入。
+NRST
+VCC
+NRST 为低电平有效复位信号；它必须上拉至 VCC，否则器件无法
+启动，有关详情，请参阅节 9.1
+(1)
+任何具有第二功能（与通用 I/O 共用）的未使用引脚都应遵循“PAx 和 PBx”未使用引脚连接指南。
+MSPM0G3507, MSPM0G3506, MSPM0G3505
+ZHCSSC4A – FEBRUARY 2023 – REVISED JUNE 2023
+www.ti.com.cn
+ADVANCE INFORMATION
+28
+Submit Document Feedback
+Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: MSPM0G3507 MSPM0G3506 MSPM0G3505
+English Data Sheet: SLASEX6
+

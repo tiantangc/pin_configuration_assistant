@@ -1,0 +1,13 @@
+{
+  "name": "inspect-env",
+  "description": "inspect",
+  "phases": [
+    "run"
+  ],
+  "readOnly": true,
+  "maxAgents": 1,
+  "maxConcurrency": 1,
+  "patterns": [
+    "fan-out-and-synthesize"
+  ]
+}

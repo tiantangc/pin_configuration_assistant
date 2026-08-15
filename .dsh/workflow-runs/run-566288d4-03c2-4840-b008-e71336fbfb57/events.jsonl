@@ -1,0 +1,2 @@
+{"seq":0,"time":1786803810193,"type":"workflow-started","data":{"runId":"run-566288d4-03c2-4840-b008-e71336fbfb57","workflow":"inspect-wf"}}
+{"seq":1,"time":1786803863714,"type":"workflow-completed","data":{"resultSummary":"{\"wfKeys\":[\"runId\",\"args\",\"budget\",\"phase\",\"spawnAgent\",\"runAgent\",\"wait\",\"snapshot\",\"output\",\"send\",\"stop\",\"parallel\",\"pipeline\",\"synthesize\",\"workflow\",\"artifact\",\"log\"],\"wfType\":\"object\",\"argsType\":\"object\",\"args\":{}}"}}

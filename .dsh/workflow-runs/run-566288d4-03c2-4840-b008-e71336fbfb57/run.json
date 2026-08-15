@@ -1,0 +1,95 @@
+{
+  "runId": "run-566288d4-03c2-4840-b008-e71336fbfb57",
+  "workflow": "inspect-wf",
+  "displayName": "inspect-wf",
+  "status": "completed",
+  "source": "inline",
+  "execution": "capability-generated",
+  "startedAt": 1786803810191,
+  "totalSpawned": 0,
+  "activeAgents": 0,
+  "eventCount": 2,
+  "artifacts": [],
+  "process": {
+    "runId": "run-566288d4-03c2-4840-b008-e71336fbfb57",
+    "workflowName": "inspect-wf",
+    "status": "completed",
+    "startedAt": "2026-08-15T14:23:30.191Z",
+    "updatedAt": "2026-08-15T14:24:23.717Z",
+    "items": [
+      {
+        "id": "phase:1",
+        "title": "run",
+        "kind": "phase",
+        "status": "skipped"
+      }
+    ],
+    "counts": {
+      "pending": 0,
+      "running": 0,
+      "completed": 0,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 1
+    },
+    "progress": {
+      "spawnedAgents": 0,
+      "finishedAgents": 0,
+      "activeAgents": 0,
+      "failedAgents": 0,
+      "stoppedAgents": 0,
+      "replayedAgents": 0
+    }
+  },
+  "result": {
+    "wfKeys": [
+      "runId",
+      "args",
+      "budget",
+      "phase",
+      "spawnAgent",
+      "runAgent",
+      "wait",
+      "snapshot",
+      "output",
+      "send",
+      "stop",
+      "parallel",
+      "pipeline",
+      "synthesize",
+      "workflow",
+      "artifact",
+      "log"
+    ],
+    "wfType": "object",
+    "argsType": "object",
+    "args": {}
+  },
+  "resultSummary": "{\"wfKeys\":[\"runId\",\"args\",\"budget\",\"phase\",\"spawnAgent\",\"runAgent\",\"wait\",\"snapshot\",\"output\",\"send\",\"stop\",\"parallel\",\"pipeline\",\"synthesize\",\"workflow\",\"artifact\",\"log\"],\"wfType\":\"object\",\"argsType\":\"object\",\"args\":{}}",
+  "endedAt": 1786803863716,
+  "cost": {
+    "wallClockDurationMs": 53525,
+    "agentsStarted": 0,
+    "agentsCompleted": 0,
+    "cacheHits": 0,
+    "tokenUsage": 0,
+    "peakConcurrency": 0
+  },
+  "outcome": {
+    "runId": "run-566288d4-03c2-4840-b008-e71336fbfb57",
+    "status": "completed",
+    "summary": "{\"wfKeys\":[\"runId\",\"args\",\"budget\",\"phase\",\"spawnAgent\",\"runAgent\",\"wait\",\"snapshot\",\"output\",\"send\",\"stop\",\"parallel\",\"pipeline\",\"synthesize\",\"workflow\",\"artifact\",\"log\"],\"wfType\":\"object\",\"argsType\":\"object\",\"args\":{}}",
+    "results": [],
+    "artifacts": [],
+    "coverage": [],
+    "unresolved": [],
+    "errors": [],
+    "usage": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "cacheReadTokens": 0,
+      "totalTokens": 0,
+      "totalSpawned": 0
+    }
+  }
+}

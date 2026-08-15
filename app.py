@@ -14,17 +14,26 @@ import datetime
 import html as html_mod
 import io
 import json
+import os
 import re
 from typing import Any, Dict, List, Tuple
 
 from nicegui import ui
 
-from solver import (Chip, Solver, build_requests_from_spec,
+from solver import (CHIP_DIR, Chip, Solver, build_requests_from_spec,
                     candidate_options_for_request, diagnose_no_solution,
                     format_solution, list_peripherals, load_chip,
                     parse_lock_text)
 
 chip: Chip = load_chip("STM32F103C8Tx")
+CHIP_OPTIONS: Dict[str, str] = {}
+for _fn in sorted(os.listdir(CHIP_DIR)):
+    if _fn.endswith(".json"):
+        _cid = _fn[:-5]
+        try:
+            CHIP_OPTIONS[_cid] = load_chip(_cid).name
+        except Exception:
+            pass
 all_periphs: List[Dict[str, Any]] = sorted(
     list_peripherals(), key=lambda p: (p.get("name", ""), p.get("id", "")))
 periph_options = {p["id"]: f"{p.get('icon','')} {p['name']} —— {p.get('description','')}"
@@ -83,11 +92,13 @@ pinout_dl_name_input = None
 pinout_dl_fmt_select = None
 pending_pinout_svg = ""
 
-# 引脚下拉选项：引脚名 + 默认功能备注
-pin_options = {}
-for _pin, _info in chip.pins.items():
-    _notes = "、".join(_info.get("notes", []))
-    pin_options[_pin] = _pin + (f"（{_notes}）" if _notes else "")
+# 引脚下拉选项：引脚名 + 默认功能备注（随当前芯片动态生成）
+def get_pin_options() -> Dict[str, str]:
+    opts = {}
+    for _pin, _info in chip.pins.items():
+        _notes = "、".join(_info.get("notes", []))
+        opts[_pin] = _pin + (f"（{_notes}）" if _notes else "")
+    return opts
 
 
 def solution_to_html(chip: Chip, sol, idx: int) -> str:
@@ -198,14 +209,21 @@ def _reserved_pin_info() -> Dict[str, str]:
 
 def preview_board_svg(chip: Chip, locked_pins: Dict[str, List[str]],
                       reserved_pins: Dict[str, str]) -> str:
-    """设置界面顶部的最小系统板预览图，悬停显示锁定/保留信息。"""
+    """设置界面顶部的板子预览图，悬停显示锁定/保留信息；支持 2 排横排和 4 列竖排。"""
+    cols, _ = get_board_columns()
+    if len(cols) >= 4:
+        return _preview_board_4col(chip, locked_pins, reserved_pins, cols)
+    return _preview_board_2row(chip, locked_pins, reserved_pins, cols)
+
+
+def _preview_board_2row(chip: Chip, locked_pins, reserved_pins, cols) -> str:
     parts = ['<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" '
              'style="width:100%;max-width:1000px;height:auto">']
     parts.append('<rect width="800" height="260" fill="white"/>')
     parts.append('<rect x="20" y="40" width="760" height="150" rx="8" fill="#d1d5db" stroke="#9ca3af"/>')
 
     def draw_row(pins, y):
-        for i, pin in enumerate(pins):
+        for i, pin in enumerate(pins[:20]):
             x = 35 + i * 37
             std = _norm_board_pin(pin)
             info_lines = [f"{pin}"]
@@ -222,21 +240,21 @@ def preview_board_svg(chip: Chip, locked_pins: Dict[str, List[str]],
             title = "&#10;".join(info_lines)
             cx = x + 17
             cy = y + 22
-            # 整组（色块+文字）都响应悬停
             parts.append(f'<g><title>{title}</title>')
             parts.append(f'<rect x="{x}" y="{y}" width="34" height="34" fill="{color}" '
                          f'stroke="#374151" stroke-width="0.5"/>')
             parts.append(f'<text x="{cx}" y="{cy}" text-anchor="middle" font-size="10" '
                          f'fill="#111827" pointer-events="none">{pin}</text></g>')
 
-    draw_row(BOARD_ROW1, 70)
-    draw_row(BOARD_ROW2, 130)
+    if cols:
+        draw_row(cols[0], 70)
+    if len(cols) > 1:
+        draw_row(cols[1], 130)
 
     parts.append('<text x="8" y="90" text-anchor="middle" font-size="10" fill="#374151" '
                  'transform="rotate(-90, 8, 90)">第一排</text>')
     parts.append('<text x="8" y="150" text-anchor="middle" font-size="10" fill="#374151" '
                  'transform="rotate(-90, 8, 150)">第二排</text>')
-
     legend = [("#f59e0b", "锁定"), ("#ef4444", "保留"), ("#e5e7eb", "空闲")]
     cx = 30
     for color, label in legend:
@@ -249,11 +267,69 @@ def preview_board_svg(chip: Chip, locked_pins: Dict[str, List[str]],
     return "".join(parts)
 
 
+def _preview_board_4col(chip: Chip, locked_pins, reserved_pins, cols) -> str:
+    w = 380
+    h = 20 * 38 + 130
+    parts = [f'<svg viewBox="0 0 {w} {h}" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:400px;height:auto">']
+    parts.append(f'<rect width="{w}" height="{h}" fill="white"/>')
+    parts.append(f'<rect x="10" y="35" width="360" height="{20 * 38 + 40}" rx="8" fill="#d1d5db" stroke="#9ca3af"/>')
+
+    col_xs = [25, 100, 220, 295]  # 中间两列间距大
+    for ci, pins in enumerate(cols[:4]):
+        x = col_xs[ci]
+        for ri, pin in enumerate(pins[:20]):
+            y = 45 + ri * 38
+            std = _norm_board_pin(pin)
+            info_lines = [f"{pin}"]
+            if std in reserved_pins:
+                remark = reserved_pins[std]
+                info_lines.append("保留" + (f"：{remark}" if remark else ""))
+                color = "#ef4444"
+            elif std in locked_pins:
+                info_lines.append("锁定：" + "、".join(locked_pins[std]))
+                color = "#f59e0b"
+            else:
+                info_lines.append("空闲")
+                color = "#e5e7eb"
+            title = "&#10;".join(info_lines)
+            parts.append(f'<g><title>{title}</title>')
+            parts.append(f'<rect x="{x}" y="{y}" width="56" height="30" fill="{color}" '
+                         f'stroke="#374151" stroke-width="0.5"/>')
+            parts.append(f'<text x="{x + 28}" y="{y + 20}" text-anchor="middle" font-size="10" '
+                         f'fill="#111827" pointer-events="none">{pin}</text></g>')
+
+    legend = [("#f59e0b", "锁定"), ("#ef4444", "保留"), ("#e5e7eb", "空闲")]
+    cx = 10
+    yl = h - 42
+    for color, label in legend:
+        parts.append(f'<rect x="{cx}" y="{yl}" width="12" height="12" fill="{color}" '
+                     f'stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 14}" y="{yl + 11}" font-size="10" fill="#111827">{label}</text>')
+        cx += 62
+    parts.append('</svg>')
+    return "".join(parts)
+
+
 def refresh_preview() -> None:
     """刷新设置界面的引脚预览图。"""
     if preview_html is None:
         return
     preview_html.set_content(preview_board_svg(chip, _locked_pin_labels(), _reserved_pin_info()))
+
+
+def on_chip_change(e) -> None:
+    """切换芯片：清空当前配置，重新加载默认场景和保留引脚。"""
+    global chip
+    chip = load_chip(e.value)
+    clear_all_rows()
+    clear_all_reserve_rows()
+    load_default_scenario()
+    load_default_reserve()
+    refresh_preview()
+    result_html.set_content('<p style="color:#888">芯片已切换，点击“自动分配”查看结果。</p>')
+    result_cards.clear()
+    chip_label.set_text(f"芯片：{chip.name}（{chip.package}）")
 
 
 def renumber_rows() -> None:
@@ -516,7 +592,7 @@ def solution_to_markdown(chip: Chip, sol, idx: int,
     else:
         lines.append("- 无特殊说明")
     lines.append("")
-    lines.append("## CubeMX 配置步骤")
+    lines.append("## SysConfig 配置步骤" if chip.family == "MSPM0G" else "## CubeMX 配置步骤")
     lines.append("```text")
     lines.append(solution_to_cubemx_steps(chip, sol, idx))
     lines.append("```")
@@ -579,9 +655,9 @@ def _signal_for_assignment(chip: Chip, a, pin: str, role: str) -> str:
     if k == "adc":
         return res  # 如 ADC1_IN0
     if k in ("timer_enc", "timer_pwm", "timer_pwm_exclusive"):
-        m = re.search(r"CH(\d)", role)
+        m = re.search(r"CH(\d)", role) or re.search(r"^C(\d+)$", role)
         ch = m.group(1) if m else "?"
-        return f"{res}_CH{ch}"
+        return f"{res}_CH{ch}" if re.search(r"CH", role) else f"{res}_C{ch}"
     if k == "exti_gpio":
         exti = chip.pins[pin]["exti"]
         return f"GPIO_EXTI{exti}"
@@ -590,8 +666,79 @@ def _signal_for_assignment(chip: Chip, a, pin: str, role: str) -> str:
     return role
 
 
+def solution_to_sysconfig_steps(chip: Chip, sol, idx: int) -> str:
+    """生成 TI CCS SysConfig 配置步骤清单（MSPM0 专用）。"""
+    lines: List[str] = []
+    lines.append(f"SysConfig 配置步骤（方案 {idx}，得分 {sol.score}）")
+    lines.append("")
+    lines.append("【基础设置】")
+    lines.append(f"1. 在 CCS（Code Composer Studio）中新建/打开 {chip.name} 工程，打开 .syscfg 文件")
+    lines.append("2. 确认调试口 PA19=SWDIO、PA20=SWCLK 保持默认，不要改动")
+    lines.append("")
+
+    lines.append("【引脚配置】在 SysConfig 左侧 PinMux 面板里逐个引脚选择功能：")
+    seen_pins: set = set()
+    pin_rows: List[Tuple[str, str]] = []
+    for a in sol.assignments:
+        for disp, pin, role in a.pin_pairs():
+            sig = _signal_for_assignment(chip, a, pin, role)
+            if (pin, sig) in seen_pins:
+                continue
+            seen_pins.add((pin, sig))
+            pin_rows.append((pin, sig))
+    pin_rows.sort(key=lambda x: _pin_sort_key(x[0]))
+    for pin, sig in pin_rows:
+        lines.append(f"  - {pin:<5} → {sig}")
+    lines.append("")
+
+    lines.append("【外设配置】在 SysConfig 左侧 ADD 添加并配置外设：")
+    uarts = sorted({a.resource for a in sol.assignments if a.req.kind in ("uart", "uart_tx", "uart_rx")})
+    for r in uarts:
+        lines.append(f"  - ADD UART → 选择 {r} → 模式: Asynchronous")
+    i2cs = sorted({a.resource for a in sol.assignments if a.req.kind == "i2c"})
+    for r in i2cs:
+        lines.append(f"  - ADD I2C → 选择 {r} → 模式: Controller（主机）")
+    spis = sorted({a.resource for a in sol.assignments if a.req.kind == "spi"})
+    for r in spis:
+        lines.append(f"  - ADD SPI → 选择 {r} → 模式: Controller（主机）")
+    spi_buses = sorted({a.resource for a in sol.assignments if a.req.kind == "spi_bus"})
+    for r in spi_buses:
+        lines.append(f"  - ADD SPI → 选择 {r} → 模式: Controller（主机），CS 用 GPIO 手动控制")
+    cans = sorted({a.resource for a in sol.assignments if a.req.kind == "can"})
+    for r in cans:
+        lines.append(f"  - ADD CAN-FD → 选择 {r} → 模式: Normal")
+    adcs = sorted({a.resource for a in sol.assignments if a.req.kind == "adc"})
+    if adcs:
+        lines.append(f"  - ADD ADC → 使能通道：{', '.join(adcs)}")
+    encs = sorted({a.resource for a in sol.assignments if a.req.kind == "timer_enc"})
+    for r in encs:
+        lines.append(f"  - ADD Timer → 选择 {r} → 模式: QEI（正交编码器）")
+    pwm_timers: Dict[str, set] = {}
+    for a in sol.assignments:
+        if a.req.kind in ("timer_pwm", "timer_pwm_exclusive"):
+            for role in a.roles:
+                m = re.search(r"CH(\d)", role) or re.search(r"^C(\d+)$", role)
+                if m:
+                    pwm_timers.setdefault(a.resource, set()).add(m.group(1))
+    for r in sorted(pwm_timers):
+        chs = sorted(pwm_timers[r], key=int)
+        lines.append(f"  - ADD Timer → 选择 {r} → 通道 {', '.join(chs)}: PWM 输出")
+    exti_pins = [a.pins[0] for a in sol.assignments if a.req.kind == "exti_gpio" and a.pins]
+    if exti_pins:
+        lines.append(f"  - GPIO 中断：在 PinMux 中将 {', '.join(exti_pins)} 设为 GPIO Input，并在 NVIC/中断里使能")
+    lines.append("")
+
+    lines.append("【最后检查】")
+    lines.append("1. 检查 PinMux 无黄色/红色冲突警告")
+    lines.append("2. 确认所有 GPIO 输出脚（DIR/EN/IN1/IN2 等）已设为 GPIO Output")
+    lines.append("3. 保存 .syscfg，编译并下载")
+    return "\n".join(lines)
+
+
 def solution_to_cubemx_steps(chip: Chip, sol, idx: int) -> str:
-    """生成 CubeMX 配置步骤清单（照着点）。"""
+    """生成配置步骤清单：STM32 用 CubeMX，MSPM0 用 SysConfig。"""
+    if chip.family == "MSPM0G":
+        return solution_to_sysconfig_steps(chip, sol, idx)
     lines: List[str] = []
     lines.append(f"CubeMX 配置步骤（方案 {idx}，得分 {sol.score}）")
     lines.append("")
@@ -690,21 +837,19 @@ KIND_COLORS = {
     "gpio": "#6b7280",
 }
 
-# 你的 C8T6 最小系统板：2×20 排针，调试排针（PA13/PA14）在右边
-BOARD_ROW1 = ["G", "G", "3.3V", "RST", "B11", "B10", "B1", "B0", "A7", "A6",
-              "A5", "A4", "A3", "A2", "A1", "A0", "C15", "C14", "C13", "VB"]
-BOARD_ROW2 = ["B12", "B13", "B14", "B15", "A8", "A9", "A10", "A11", "A12",
-              "A15", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "5V", "G", "3.3V"]
+# 板子排针布局：从当前芯片数据读取（F103 为 2 排横排，MSPM0 为 4 列竖排）
+def get_board_columns() -> Tuple[List[List[str]], Dict[str, str]]:
+    bl = chip.data.get("board_layout") or {}
+    cols = bl.get("columns") or []
+    norm = bl.get("norm") or {}
+    return cols, norm
 
 
 def _norm_board_pin(pin: str) -> str:
     """把板子丝印缩写成标准引脚名，方便查颜色。"""
-    if pin in ("G", "3.3V", "5V"):
-        return pin
-    if pin == "VB":
-        return "VBAT"
-    if pin == "RST":
-        return "NRST"
+    _, norm = get_board_columns()
+    if pin in norm:
+        return norm[pin]
     if re.match(r"^[ABC]\d+$", pin):
         return "P" + pin
     return pin
@@ -786,8 +931,16 @@ def _legend_svg(x: float, y: float) -> str:
 
 
 def chip_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> str:
-    """LQFP48 芯片封装引脚图，带工程图式引出标注。"""
+    """芯片封装引脚图（当前仅 F103 有 LQFP48 封装数据），带引出标注。"""
     pin_nums = chip.data.get("package_pin_numbers", {})
+    if not pin_nums:
+        return ('<svg viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg" '
+                'style="width:100%;max-width:400px;height:auto">'
+                '<rect width="400" height="120" fill="white"/>'
+                '<text x="200" y="55" text-anchor="middle" font-size="14" fill="#374151">'
+                '该芯片暂无封装引脚图</text>'
+                '<text x="200" y="80" text-anchor="middle" font-size="12" fill="#6b7280">'
+                '请查看下方板子排针图</text></svg>')
     sol_colors = _pin_colors(sol)
     callouts = _collect_callouts(sol)
     parts = ['<svg viewBox="0 0 720 720" xmlns="http://www.w3.org/2000/svg" '
@@ -869,7 +1022,14 @@ def chip_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> st
 
 
 def board_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> str:
-    """你的 C8T6 最小系统板：2×20 排针（调试排针在右），按丝印横排绘制，带引出标注。"""
+    """板子排针图：2 排横排（F103）或 4 列竖排（MSPM0 天猛星），带引出标注。"""
+    cols, _ = get_board_columns()
+    if len(cols) >= 4:
+        return _board_pinout_4col(chip, sol, reserved, reserved_remarks, cols)
+    return _board_pinout_2row(chip, sol, reserved, reserved_remarks, cols)
+
+
+def _board_pinout_2row(chip, sol, reserved, reserved_remarks, cols) -> str:
     sol_colors = _pin_colors(sol)
     callouts = _collect_callouts(sol)
     parts = ['<svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg" '
@@ -877,11 +1037,11 @@ def board_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> s
     parts.append('<rect width="800" height="460" fill="white"/>')
     parts.append('<rect x="20" y="60" width="760" height="210" rx="8" fill="#d1d5db" stroke="#9ca3af"/>')
     parts.append('<text x="400" y="80" text-anchor="middle" font-size="14" fill="#374151">'
-                 'C8T6 最小系统板（调试排针在右）</text>')
+                 '最小系统板排针</text>')
 
     def row(pins, y):
         calls = []
-        for i, pin in enumerate(pins):
+        for i, pin in enumerate(pins[:20]):
             x = 35 + i * 37
             std = _norm_board_pin(pin)
             color = _pin_color(std, sol_colors, reserved, chip)
@@ -900,16 +1060,14 @@ def board_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> s
                 calls.append((cx, label))
         return calls
 
-    row1_calls = row(BOARD_ROW1, 125)
-    row2_calls = row(BOARD_ROW2, 205)
+    row1_calls = row(cols[0] if cols else [], 125)
+    row2_calls = row(cols[1] if len(cols) > 1 else [], 205)
 
-    # 第一排标注向上引出
     for j, (cx, label) in enumerate(row1_calls):
         yt = 106 if j % 2 == 0 else 88
         parts.append(f'<polyline points="{cx},125 {cx},{yt + 7} {cx + 5},{yt + 7}" '
                      f'fill="none" stroke="#374151" stroke-width="0.5"/>')
         parts.append(f'<text x="{cx + 7}" y="{yt + 15}" font-size="8" fill="#111827">{label}</text>')
-    # 第二排标注向下引出
     for j, (cx, label) in enumerate(row2_calls):
         yt = 288 if j % 2 == 0 else 308
         parts.append(f'<polyline points="{cx},245 {cx},{yt + 7} {cx + 5},{yt + 7}" '
@@ -920,12 +1078,60 @@ def board_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> s
                  'transform="rotate(-90, 8, 150)">第一排</text>')
     parts.append('<text x="8" y="225" text-anchor="middle" font-size="10" fill="#374151" '
                  'transform="rotate(-90, 8, 225)">第二排</text>')
-
     parts.append(_legend_svg(30, 405))
     if reserved_remarks:
         text = "保留: " + ", ".join(f"{p}({r})" if r else p
                                     for p, r in sorted(reserved_remarks.items()))
         parts.append(f'<text x="30" y="430" font-size="8" fill="#374151">{text}</text>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def _board_pinout_4col(chip, sol, reserved, reserved_remarks, cols) -> str:
+    sol_colors = _pin_colors(sol)
+    callouts = _collect_callouts(sol)
+    h = 20 * 40 + 150
+    w = 620
+    parts = [f'<svg viewBox="0 0 {w} {h}" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:640px;height:auto">']
+    parts.append(f'<rect width="{w}" height="{h}" fill="white"/>')
+    parts.append(f'<rect x="15" y="40" width="590" height="{20 * 40 + 50}" rx="8" fill="#d1d5db" stroke="#9ca3af"/>')
+    parts.append(f'<text x="{w/2}" y="25" text-anchor="middle" font-size="14" fill="#374151">'
+                 '天猛星 MSPM0G3507 排针</text>')
+
+    col_xs = [30, 150, 320, 440]  # 中间两列间距大
+    annotations = []
+    for ci, pins in enumerate(cols[:4]):
+        x = col_xs[ci]
+        for ri, pin in enumerate(pins[:20]):
+            y = 50 + ri * 40
+            std = _norm_board_pin(pin)
+            color = _pin_color(std, sol_colors, reserved, chip)
+            parts.append(f'<rect x="{x}" y="{y}" width="90" height="30" fill="{color}" '
+                         f'stroke="#374151" stroke-width="0.5"/>')
+            parts.append(f'<text x="{x + 45}" y="{y + 20}" text-anchor="middle" font-size="10" '
+                         f'fill="#111827">{pin}</text>')
+            label = None
+            if std in callouts:
+                label = "、".join(callouts[std])
+            elif reserved_remarks and std in reserved_remarks and reserved_remarks[std]:
+                label = "保留·" + reserved_remarks[std]
+            if label:
+                annotations.append((x, y, ri, label))
+
+    # 引线标注最后统一绘制，保证文字在所有引脚色块之上
+    for x, y, ri, label in annotations:
+        lx = x + 95
+        ly = y + 8 + (ri % 2) * 12
+        parts.append(f'<polyline points="{x + 90},{y + 10} {lx},{y + 10} {lx},{ly}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{lx + 4}" y="{ly + 4}" font-size="7" fill="#111827">{label}</text>')
+
+    parts.append(_legend_svg(20, h - 45))
+    if reserved_remarks:
+        text = "保留: " + ", ".join(f"{p}({r})" if r else p
+                                    for p, r in sorted(reserved_remarks.items()))
+        parts.append(f'<text x="20" y="{h - 25}" font-size="8" fill="#374151">{text}</text>')
     parts.append('</svg>')
     return "".join(parts)
 
@@ -1195,7 +1401,7 @@ def add_reserve_row(pin: str = None, remark: str = "") -> None:
     with reserve_rows_container:
         with ui.row().classes("items-center gap-2") as row:
             num_label = ui.label("").classes("w-6 text-right text-gray-500")
-            sel = ui.select(pin_options, value=pin).classes("w-96")
+            sel = ui.select(get_pin_options(), value=pin).classes("w-96")
             sel.on_value_change(lambda e: refresh_preview())
             remark_input = ui.input("备注", value=remark, placeholder="如 板载LED").classes("w-36")
             remark_input.on_value_change(lambda e: refresh_preview())
@@ -1296,7 +1502,7 @@ def on_solve() -> None:
         for i, sol in enumerate(solutions[:MAX_SHOWN], 1):
             with ui.expansion(f"方案 {i} —— 得分 {sol.score}").classes("w-full border rounded-lg"):
                 ui.html(solution_to_html(chip, sol, i)).classes("w-full")
-                with ui.expansion("📋 CubeMX 配置步骤").classes("w-full border rounded"):
+                with ui.expansion(("📋 SysConfig 配置步骤" if chip.family == "MSPM0G" else "📋 CubeMX 配置步骤")).classes("w-full border rounded"):
                     steps = solution_to_cubemx_steps(chip, sol, i)
                     ui.html('<pre style="background:#f6f8fa;padding:12px;border-radius:8px;'
                             'overflow-x:auto;font-size:13px;line-height:1.45">'
@@ -1321,7 +1527,10 @@ def on_solve() -> None:
 
 with ui.header().classes("items-center justify-between"):
     ui.label("🔌 单片机引脚配置辅助助手").classes("text-xl font-bold")
-    ui.label(f"芯片：{chip.name}（{chip.package}）").classes("text-sm")
+    with ui.row().classes("items-center gap-2"):
+        chip_select = ui.select(CHIP_OPTIONS, value=chip.id).classes("w-64")
+        chip_label = ui.label(f"芯片：{chip.name}（{chip.package}）").classes("text-sm")
+    chip_select.on_value_change(on_chip_change)
 
 with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
 

@@ -10,7 +10,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass, field
-from itertools import combinations
+from itertools import combinations, product
 from typing import Any, Dict, List, Optional, Tuple
 
 # Windows 控制台中文兼容
@@ -107,6 +107,7 @@ class Chip:
         self.id = data["id"]
         self.name = data.get("name", data["id"])
         self.package = data.get("package", "")
+        self.family = data.get("family", "")
         self.pins: Dict[str, Dict[str, Any]] = data["pins"]
         self.groups: Dict[str, Any] = data.get("peripheral_groups", {})
         self.default_reserved: set = set(data.get("reserved_pins_by_default", []))
@@ -135,127 +136,256 @@ class Chip:
     def uart_candidates(self) -> List[Dict[str, Any]]:
         out = []
         for uart_id, groups in self.groups.get("UART", {}).items():
-            for g in groups:
-                out.append({
-                    "resource": uart_id,
-                    "remap": g["remap"],
-                    "label": g["label"],
-                    "pins": [g["tx"], g["rx"]],
-                    "roles": ["TX", "RX"],
-                })
+            if isinstance(groups, list):
+                # F103 绑定组格式
+                for g in groups:
+                    out.append({
+                        "resource": uart_id,
+                        "remap": g["remap"],
+                        "label": g["label"],
+                        "pins": [g["tx"], g["rx"]],
+                        "roles": ["TX", "RX"],
+                        "tx": g["tx"], "rx": g["rx"],
+                    })
+            else:
+                # MSPM0 灵活复用格式：TX/RX 各自独立选择
+                for tx in groups.get("tx", []):
+                    for rx in groups.get("rx", []):
+                        if tx == rx:
+                            continue
+                        out.append({
+                            "resource": uart_id,
+                            "remap": 0,
+                            "label": groups.get("label", uart_id),
+                            "pins": [tx, rx],
+                            "roles": ["TX", "RX"],
+                            "tx": tx, "rx": rx,
+                        })
         return out
 
     def i2c_candidates(self) -> List[Dict[str, Any]]:
         out = []
         for i2c_id, groups in self.groups.get("I2C", {}).items():
-            for g in groups:
-                out.append({
-                    "resource": i2c_id,
-                    "remap": g["remap"],
-                    "label": g["label"],
-                    "pins": [g["scl"], g["sda"]],
-                    "roles": ["SCL", "SDA"],
-                })
+            if isinstance(groups, list):
+                # F103 绑定组格式
+                for g in groups:
+                    out.append({
+                        "resource": i2c_id,
+                        "remap": g["remap"],
+                        "label": g["label"],
+                        "pins": [g["scl"], g["sda"]],
+                        "roles": ["SCL", "SDA"],
+                    })
+            else:
+                for scl in groups.get("scl", []):
+                    for sda in groups.get("sda", []):
+                        if scl == sda:
+                            continue
+                        out.append({
+                            "resource": i2c_id,
+                            "remap": 0,
+                            "label": groups.get("label", i2c_id),
+                            "pins": [scl, sda],
+                            "roles": ["SCL", "SDA"],
+                        })
         return out
 
     def spi_candidates(self) -> List[Dict[str, Any]]:
         out = []
         for spi_id, groups in self.groups.get("SPI", {}).items():
-            for g in groups:
-                out.append({
-                    "resource": spi_id,
-                    "remap": g["remap"],
-                    "label": g["label"],
-                    "pins": [g["nss"], g["sck"], g["miso"], g["mosi"]],
-                    "roles": ["NSS", "SCK", "MISO", "MOSI"],
-                })
+            if isinstance(groups, list):
+                # F103 绑定组格式
+                for g in groups:
+                    out.append({
+                        "resource": spi_id,
+                        "remap": g["remap"],
+                        "label": g["label"],
+                        "pins": [g["nss"], g["sck"], g["miso"], g["mosi"]],
+                        "roles": ["NSS", "SCK", "MISO", "MOSI"],
+                    })
+            else:
+                # MSPM0：完整 4 线 SPI 组合，CS 限制前 4 个避免爆炸
+                picos = groups.get("pico", [])[:4]
+                pocis = groups.get("poci", [])[:4]
+                scks = groups.get("sck", [])[:4]
+                css = groups.get("cs", [])[:4]
+                for pico in picos:
+                    for poci in pocis:
+                        for sck in scks:
+                            for cs in css:
+                                pins = [cs, sck, poci, pico]
+                                if len(set(pins)) != 4:
+                                    continue
+                                out.append({
+                                    "resource": spi_id,
+                                    "remap": 0,
+                                    "label": groups.get("label", spi_id),
+                                    "pins": pins,
+                                    "roles": ["NSS", "SCK", "MISO", "MOSI"],
+                                })
         return out
 
     def spi_bus_candidates(self) -> List[Dict[str, Any]]:
         """SPI 总线（软件 NSS 模式）：只共享 SCK/MISO/MOSI 三线。"""
         out = []
         for spi_id, groups in self.groups.get("SPI", {}).items():
-            for g in groups:
-                out.append({
-                    "resource": spi_id,
-                    "remap": g["remap"],
-                    "label": g["label"] + "（软件NSS）",
-                    "pins": [g["sck"], g["miso"], g["mosi"]],
-                    "roles": ["SCK", "MISO", "MOSI"],
-                })
+            if isinstance(groups, list):
+                for g in groups:
+                    out.append({
+                        "resource": spi_id,
+                        "remap": g["remap"],
+                        "label": g["label"] + "（软件NSS）",
+                        "pins": [g["sck"], g["miso"], g["mosi"]],
+                        "roles": ["SCK", "MISO", "MOSI"],
+                    })
+            else:
+                for pico in groups.get("pico", [])[:4]:
+                    for poci in groups.get("poci", [])[:4]:
+                        for sck in groups.get("sck", [])[:4]:
+                            pins = [sck, poci, pico]
+                            if len(set(pins)) != 3:
+                                continue
+                            out.append({
+                                "resource": spi_id,
+                                "remap": 0,
+                                "label": groups.get("label", spi_id) + "（软件NSS）",
+                                "pins": pins,
+                                "roles": ["SCK", "MISO", "MOSI"],
+                            })
         return out
 
     def can_candidates(self) -> List[Dict[str, Any]]:
         out = []
         for can_id, groups in self.groups.get("CAN", {}).items():
-            for g in groups:
-                out.append({
-                    "resource": can_id,
-                    "remap": g["remap"],
-                    "label": g["label"],
-                    "pins": [g["rx"], g["tx"]],
-                    "roles": ["RX", "TX"],
-                })
+            if isinstance(groups, list):
+                for g in groups:
+                    out.append({
+                        "resource": can_id,
+                        "remap": g["remap"],
+                        "label": g["label"],
+                        "pins": [g["rx"], g["tx"]],
+                        "roles": ["RX", "TX"],
+                    })
+            else:
+                for tx in groups.get("tx", []):
+                    for rx in groups.get("rx", []):
+                        if tx == rx:
+                            continue
+                        out.append({
+                            "resource": can_id,
+                            "remap": 0,
+                            "label": groups.get("label", can_id),
+                            "pins": [rx, tx],
+                            "roles": ["RX", "TX"],
+                        })
         return out
 
     def adc_candidates(self) -> List[Dict[str, Any]]:
-        """F103 的 ADC1/ADC2 通道引脚相同，统一按 ADC1_INn 给出候选。"""
+        """兼容 F103 的 ADC1_INn 与 MSPM0 的 A0_x / A1_x 两种模拟通道格式。"""
         out = []
         for pin, info in self.pins.items():
             adc_list = info.get("adc") or []
             for sig in adc_list:
-                if not sig.startswith("ADC1_IN"):
-                    continue
-                try:
-                    channel = int(sig.split("_IN")[1])
-                except ValueError:
-                    continue
-                out.append({
-                    "resource": sig,
-                    "channel": channel,
-                    "remap": 0,
-                    "label": sig,
-                    "pins": [pin],
-                    "roles": ["ADC"],
-                })
-        out.sort(key=lambda c: (c["channel"], c["pins"][0]))
+                if sig.startswith("ADC1_IN"):
+                    try:
+                        channel = int(sig.split("_IN")[1])
+                    except ValueError:
+                        continue
+                    out.append({
+                        "resource": sig,
+                        "channel": channel,
+                        "remap": 0,
+                        "label": sig,
+                        "pins": [pin],
+                        "roles": ["ADC"],
+                    })
+                elif sig.startswith("A0_") or sig.startswith("A1_"):
+                    out.append({
+                        "resource": sig,
+                        "channel": sig,
+                        "remap": 0,
+                        "label": sig,
+                        "pins": [pin],
+                        "roles": ["ADC"],
+                    })
+        out.sort(key=lambda c: (str(c["channel"]), c["pins"][0]))
         return out
 
     def timer_enc_candidates(self) -> List[Dict[str, Any]]:
         out = []
         for timer_id, groups in self.groups.get("TIMER", {}).items():
-            for g in groups:
-                ch = g.get("channels", {})
-                if "1" in ch and "2" in ch:
-                    out.append({
-                        "resource": timer_id,
-                        "remap": g["remap"],
-                        "label": g["label"],
-                        "pins": [ch["1"], ch["2"]],
-                        "roles": ["编码器A(CH1)", "编码器B(CH2)"],
-                        "channels": ["1", "2"],
-                    })
+            if isinstance(groups, list):
+                # F103 绑定组格式
+                for g in groups:
+                    ch = g.get("channels", {})
+                    if "1" in ch and "2" in ch:
+                        out.append({
+                            "resource": timer_id,
+                            "remap": g["remap"],
+                            "label": g["label"],
+                            "pins": [ch["1"], ch["2"]],
+                            "roles": ["编码器A(CH1)", "编码器B(CH2)"],
+                            "channels": ["1", "2"],
+                        })
+            else:
+                # MSPM0：取 C0/C1 两个通道自由组合
+                ch = groups.get("channels", {})
+                c0 = ch.get("C0", [])[:6]
+                c1 = ch.get("C1", [])[:6]
+                for p0 in c0:
+                    for p1 in c1:
+                        if p0 == p1:
+                            continue
+                        out.append({
+                            "resource": timer_id,
+                            "remap": 0,
+                            "label": groups.get("label", timer_id),
+                            "pins": [p0, p1],
+                            "roles": ["编码器A(C0)", "编码器B(C1)"],
+                            "channels": ["C0", "C1"],
+                        })
         return out
 
     def timer_pwm_candidates(self, count: int) -> List[Dict[str, Any]]:
-        """选一个定时器的一个 remap 组，从中取 count 个通道。"""
+        """选一个定时器，取 count 个通道；兼容 F103 绑定组与 MSPM0 灵活格式。"""
         out = []
         for timer_id, groups in self.groups.get("TIMER", {}).items():
-            for g in groups:
-                ch = g.get("channels", {})
-                ch_names = sorted(ch.keys(), key=lambda x: int(x))
+            if isinstance(groups, list):
+                # F103 绑定组格式
+                for g in groups:
+                    ch = g.get("channels", {})
+                    ch_names = sorted(ch.keys(), key=lambda x: int(x))
+                    if len(ch_names) < count:
+                        continue
+                    for combo in combinations(ch_names, count):
+                        pins = [ch[n] for n in combo]
+                        out.append({
+                            "resource": timer_id,
+                            "remap": g["remap"],
+                            "label": g["label"],
+                            "pins": pins,
+                            "roles": [f"CH{n}" for n in combo],
+                            "channels": list(combo),
+                        })
+            else:
+                # MSPM0 灵活格式：通道名 C0/C1/... 各自可映射到多个引脚
+                ch = groups.get("channels", {})
+                ch_names = sorted(ch.keys(), key=lambda x: int(x[1:]) if x[1:].isdigit() else 99)
                 if len(ch_names) < count:
                     continue
                 for combo in combinations(ch_names, count):
-                    pins = [ch[n] for n in combo]
-                    out.append({
-                        "resource": timer_id,
-                        "remap": g["remap"],
-                        "label": g["label"],
-                        "pins": pins,
-                        "roles": [f"CH{n}" for n in combo],
-                        "channels": list(combo),
-                    })
+                    pin_lists = [ch[n][:5] for n in combo]
+                    for pins in product(*pin_lists):
+                        if len(set(pins)) != len(pins):
+                            continue
+                        out.append({
+                            "resource": timer_id,
+                            "remap": 0,
+                            "label": groups.get("label", timer_id),
+                            "pins": list(pins),
+                            "roles": list(combo),
+                            "channels": list(combo),
+                        })
         return out
 
 

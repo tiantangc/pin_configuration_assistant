@@ -1,0 +1,108 @@
+===== PAGE 12 TABLES 1 =====
+--- table 0 rows 21 ---
+ |  | 信号名称 |  | 引脚编号 |  |  |  | 
+PINCMx | 引脚名 称 | 模拟 | 数字 [引脚功能] (1) | PFQL 46 | NFQV、PFQL 84 | NFQV 23 | POSSV 82 | IO 结构
+不适用 |  | VDD |  | 40 | 6 | 4 | 7 | 电源
+不适用 |  | VSS |  | 41 | 7 | 5 | 8 | 电源
+不适用 |  | VCORE |  | 32 | 48 | 32 | 3 | 电源
+不适用 |  | NRST |  | 38 | 4 | 3 | 6 | 复位
+1 | PA0 |  | UART0_TX [2] / I2C0_SDA [3] / TIMA0_C0 [4] / TIMA_FAL1 [5] / TIMG8_C1 [6] / FCC_IN [7] | 33 | 1 | 1 | 4 | 5V 容限开 漏
+2 | PA1 |  | UART0_RX [2] / I2C0_SCL [3] / TIMA0_C1 [4] / TIMA_FAL2 [5] / TIMG8_IDX [6] / TIMG8_C0 [7] | 34 | 2 | 2 | 5 | 5V 容限开 漏
+3 | PA28 |  | UART0_TX [2] / I2C0_SDA [3] / TIMA0_C3 [4] / TIMA_FAL0 [5] / TIMG7_C0 [6] / TIMA1_C0 [ 7] | 35 | 3 | – | - | 高驱动
+4 | PA29 |  | I2C1_SCL [2] / UART2_RTS [3] / TIMG8_C0 [4] / TIMG6_C0 [5] | 36 | – | - | - | 标准
+5 | PA30 |  | I2C1_SDA [2] / UART2_CTS [3] / TIMG8_C1 [4] / TIMG6_C1 [5] | 37 | - | - | - | 标准
+6 | PA31 |  | UART0_RX [2] / I2C0_SCL [3] / TIMA0_C3N [4] / TIMG12_C1 [5] / CLK_OUT [6]/ TIMG7_C1 [7] / TIMA1_C1 [8] | 39 | 5 | - | - | 高驱动
+7 | PA2 | ROSC | TIMG8_C1 [2] / SPI0_CS0 [3] / TIMG7_C1 [4] / SPI1_CS0 [5] | 42 | 8 | 6 | 9 | 标准
+8 | PA3 | LFXIN | TIMG8_C0 [2] / SPI0_CS1 [3] / UART2_CTS [4] / TIMA0_C2 [5] / COMP1_OUT [6] / TIMG7_C0 [7] / TIMA0_C1 [8] / I2C1_SDA [9] | 43 | 9 | 7 | 10 | 标准
+9 | PA4 | LFXOUT | TIMG8_C1 [2] / SPI0_POCI [3] / UART2_RTS [4] / TIMA0_C3 [5] / LFCLK_IN [6] / TIMG7_C1 [7] / TIMA0_C1N [8] / I2C1_SCL [9] | 44 | 10 | 8 | 11 | 标准
+10 | PA5 | HFXIN | TIMG8_C0 [2] / SPI0_PICO [3] / TIMA_FAL1 [4] / TIMG0_C0 [5] / TIMG6_C0 [6] / FCC_IN [7] | 45 | 11 | 9 | 12 | 标准
+11 | PA6 | HFXOUT | TIMG8_C1 [2] / SPI0_SCK [3] / TIMA_FAL0 [4] / TIMG0_C1 [5] / HFCLK_IN [6] / TIMG6_C1 [ 7] / TIMA0_C2N [8] | 46 | 12 | 10 | 13 | 标准
+12 | PB0 |  | UART0_TX [2] / SPI1_CS2 [3] / TIMA1_C0 [4] / TIMA0_C2 [5] | 47 | – | - | - | 标准
+13 | PB1 |  | UART0_RX [2] / SPI1_CS3 [3] / TIMA1_C1 [4] / TIMA0_C2N [5] | 48 | - | - | - | 标准
+14 | PA7 |  | COMP0_OUT [2] / CLK_OUT [3] / TIMG8_C0 [4] / TIMA0_C2 [5] / TIMG8_IDX [6] / TIMG7_C1 [7] / TIMA0_C1 [8] | 49 | 13 | 11 | – | 标准
+15 | PB2 |  | UART3_TX [2] / UART2_CTS [3] / I2C1_SCL [4] / TIMA0_C3 [5] / UART1_CTS [6] / TIMG6_C0 [ 7] / TIMA1_C0 [8] | 50 | 14 | - | - | 标准
+===== PAGE 13 TABLES 1 =====
+--- table 0 rows 23 ---
+ |  | 信号名称 |  | 引脚编号 |  |  |  | 
+PINCMx | 引脚名 称 | 模拟 | 数字 [引脚功能] (1) | PFQL 46 | NFQV、PFQL 84 | NFQV 23 | POSSV 82 | IO 结构
+16 | PB3 |  | UART3_RX [2] / UART2_RTS [3] / I2C1_SDA [4] / TIMA0_C3N[5] / UART1_RTS [6] / TIMG6_C1 [7] / TIMA1_C1 [8] | 51 | 15 | - | - | 标准
+17 | PB4 |  | UART1_TX [2] / UART3_CTS [3] / TIMA1_C0 [4] / TIMA0_C2 [5] / TIMA1_C0N [6] | 52 | - | - | - | 标准
+18 | PB5 |  | UART1_RX [2] / UART3_RTS [3] / TIMA1_C1 [4] / TIMA0_C2N [5] / TIMA1_C1N [6] | 53 | - | - | - | 标准
+19 | PA8 |  | UART1_TX [2] / SPI0_CS0 [3] / UART0_RTS [4] / TIMA0_C0 [5] / TIMA1_C0N [6] | 54 | 16 | 12 | - | 标准
+20 | PA9 |  | UART1_RX [2] / SPI0_PICO [3] / UART0_CTS [4] / TIMA0_C1 [5] / RTC_OUT [6] / TIMA0_C0N [7] / TIMA1_C1N [8] / CLK_OUT[9] | 55 | 17 | 13 | 14 | 高速
+21 | PA10 |  | UART0_TX [2] / SPI0_POCI [3] / I2C0_SDA [4] / TIMA1_C0 [5] / TIMG12_C0 [6] / TIMA0_C2 [7] / I2C1_SDA [8] / CLK_OUT [9] | 56 | 18 | 14 | 15 | 高驱动
+22 | PA11 |  | UART0_RX [2] / SPI0_SCK [3] / I2C0_SCL [4] / TIMA1_C1 [5] / COMP0_OUT [6]/ TIMA0_C2N [7] / I2C1_SCL [8] | 57 | 19 | 15 | 16 | 高驱动
+23 | PB6 |  | UART1_TX [2] / SPI1_CS0 [3] / SPI0_CS1 [4] / TIMG8_C0 [5] / UART2_CTS [6] / TIMG6_C0 [7] / TIMA1_C0N [8] | 58 | 20 | – | - | 标准
+24 | PB7 |  | UART1_RX [2] / SPI1_POCI [3] / SPI0_CS2 [4] / TIMG8_C1 [5] / UART2_RTS [6] / TIMG6_C1 [7] / TIMA1_C1N [8] | 59 | 21 | – | - | 标准
+25 | PB8 |  | UART1_CTS [2] / SPI1_PICO [3] / TIMA0_C0 [4] / COMP1_OUT [5] | 60 | 22 | – | - | 标准
+26 | PB9 |  | UART1_RTS [2] / SPI1_SCK [3] / TIMA0_C1 [4] / TIMA0_C0N [5] | 61 | 23 | – | - | 标准
+27 | PB10 |  | TIMG0_C0 [2] / TIMG8_C0 [3] / COMP1_OUT [4] / TIMG6_C0 [5] | 62 | - | - | - | 标准
+28 | PB11 |  | TIMG0_C1 [2] / TIMG8_C1 [3] / CLK_OUT [4] / TIMG6_C1 [5] | 63 | - | - | - | 标准
+29 | PB12 |  | UART3_TX [2] / TIMA0_C2 [3] / TIMA_FAL1 [4] / TIMA0_C1 [5] | 64 | - | - | - | 标准
+30 | PB13 |  | UART3_RX [2] / TIMA0_C3 [3] / TIMG12_C0 [4] / TIMA0_C1N [5] | 1 | - | - | - | 标准
+31 | PB14 |  | SPI1_CS3 [2] / SPI1_POCI [3] / SPI0_CS3 [4] / TIMG12_C1 [5] / TIMG8_IDX [6] / TIMA0_C0 [7] | 2 | 24 | – | - | 标准
+32 | PB15 |  | UART2_TX [2] / SPI1_PICO [3] / UART3_CTS [4] / TIMG8_C0 [5] / TIMG7_C0 [6] | 3 | 25 | - | - | 标准
+33 | PB16 |  | UART2_RX [2] / SPI1_SCK [3] / UART3_RTS [4] / TIMG8_C1 [5] / TIMG7_C1 [6] | 4 | 26 | - | - | 标准
+34 | PA12 |  | UART3_CTS [2] / SPI0_SCK [3] / TIMG0_C0 [4] / CAN_TX [5] / TIMA0_C3 [6] / FCC_IN [7] | 5 | 27 | 16 | – | 高速
+35 | PA13 | COMP0_IN2- | UART3_RTS [2] / SPI0_POCI [3] / UART3_RX [4] / TIMG0_C1 [5] / CAN_RX [6] / TIMA0_C3N [7] | 6 | 28 | 17 | – | 高速
+36 | PA14 | COMP0_IN2+ / A0_12 | UART0_CTS [2] / SPI0_PICO [3] / UART3_TX [4] / TIMG12_C0 [5] / CLK_OUT [6] | 7 | 29 | 18 | 17 | 高速
+===== PAGE 14 TABLES 1 =====
+--- table 0 rows 24 ---
+ |  | 信号名称 |  | 引脚编号 |  |  |  | 
+PINCMx | 引脚名 称 | 模拟 | 数字 [引脚功能] (1) | PFQL 46 | NFQV、PFQL 84 | NFQV 23 | POSSV 82 | IO 结构
+37 | PA15 | A1_0 / DAC_OUT / OPA0_IN2+ / OPA1_IN2+/ COMP0_IN3+ / COMP1_IN3+ | UART0_RTS [2] / SPI1_CS2 [3] / I2C1_SCL [4] / TIMA1_C0 [5] / TIMG8_IDX [6] / TIMA1_C0N [7] / TIMA0_C2 [8] | 8 | 30 | 19 | 18 | 标准
+38 | PA16 | A1_1 / OPA1_OUT | COMP2_OUT [2] / SPI1_POCI [3] / I2C1_SDA [4] / TIMA1_C1 [5] / TIMA1_C1N [6] / TIMA0_C2N [7] / FCC_IN [8] | 9 | 31 | 20 | 19 | 标准
+39 | PA17 | A1_2 / OPA1_IN1- / COMP0_IN1- | UART1_TX [2] / SPI1_SCK [3] / I2C1_SCL [4] / TIMA0_C3 [5] / TIMG7_C0 [6] / TIMA1_C0 [7] | 10 | 32 | 21 | 20 | 具有唤醒功 能的标准配 置(2)
+40 | PA18 | A1_3 / OPA1_IN1+ / COMP0_IN1+ / GPAMP_IN- | UART1_RX [2] / SPI1_PICO [3] / I2C1_SDA [4] / TIMA0_C3N [5] / TIMG7_C1 [6] / TIMA1_C1 [7] | 11 | 33 | 22 | 21 | 具有唤醒功 能的标准配 置(2)
+41 | PA19 |  | SWDIO [2] | 12 | 34 | 23 | 22 | 高速
+42 | PA20 |  | SWCLK [2] | 13 | 35 | 24 | 23 | 标准
+43 | PB17 | A1_4 / COMP1_IN2- | UART2_TX [2] / SPI0_PICO [3] / SPI1_CS1 [4] / TIMA1_C0 [5] / TIMA0_C2 [6] | 14 | 36 | – | - | 标准
+44 | PB18 | A1_5 / COMP1_IN2+ | UART2_RX [2] / SPI0_SCK [3] / SPI1_CS2 [4] / TIMA1_C1 [5] / TIMA0_C2N [6] | 15 | 37 | - | - | 标准
+45 | PB19 | A1_6 / COMP2_IN1+ / OPA1_IN0+ | COMP2_OUT [2] / SPI0_POCI [3] / TIMG8_C1 [4] / UART0_CTS [5] / TIMG7_C1 [6] | 16 | 38 | – | - | 标准
+46 | PA21 | A1_7 / COMP2_IN1- / VREF- | UART2_TX [2] / TIMG8_C0 [3] / UART1_CTS [4] / TIMA0_C0 [5] / TIMG6_C0 [6] | 17 | 39 | 25 | 24 | 标准
+47 | PA22 | A0_7 / GPAMP_OUT / OPA0_OUT | UART2_RX [2] / TIMG8_C1 [3] / UART1_RTS [4] / TIMA0_C1 [5] / CLK_OUT [6] / TIMA0_C0N [7] / TIMG6_C1 [8] | 18 | 40 | 26 | 25 | 标准
+48 | PB20 | A0_6 / OPA1_IN0- | SPI0_CS2 [2] / SPI1_CS0 [3] / TIMA0_C2 [4] / TIMG12_C0 [5] / TIMA_FAL1 [6] / TIMA0_C1 [7] / TIMA1_C1N [8] | 19 | 41 | – | - | 标准
+49 | PB21 | COMP2_IN0+ | SPI1_POCI [2] / TIMG8_C0 [3] | 20 | – | - | - | 标准
+50 | PB22 | COMP2_IN0- | SPI1_PICO [2] / TIMG8_C1 [3] | 21 | – | - | - | 标准
+51 | PB23 |  | SPI1_SCK [2] / COMP0_OUT [3] / TIMA_FAL0 [4] | 22 | – | - | - | 标准
+52 | PB24 | A0_5 / COMP1_IN1+ | SPI0_CS3 [2] / SPI0_CS1 [3] / TIMA0_C3 [4] / TIMG12_C1 [5] / TIMA0_C1N [6] / TIMA1_C0N [7] | 23 | 42 | - | - | 标准
+53 | PA23 | COMP1_IN1- / VREF+ | UART2_TX [2] / SPI0_CS3 [3] / TIMA0_C3 [4] / TIMG0_C0 [5] / UART3_CTS [6] / TIMG7_C0 [7]/ TIMG8_C0 [8] | 24 | 43 | 27 | 26 | 标准
+54 | PA24 | A0_3 / OPA0_IN1- | UART2_RX [2] / SPI0_CS2 [3] / TIMA0_C3N [4] / TIMG0_C1 [5] / UART3_RTS [6] / TIMG7_C1 [7] / TIMA1_C1 [8] | 25 | 44 | 28 | 27 | 标准
+55 | PA25 | A0_2 / OPA0_IN1+ | UART3_RX [2] / SPI1_CS3 [3] / TIMG12_C1 [4] / TIMA0_C3 [5] / TIMA0_C1N [6] | 26 | 45 | 29 | 28 | 标准
+56 | PB25 | A0_4 | UART0_CTS [2] / SPI0_CS0 [3] / TIMA_FAL2 [4] | 27 | – | - | - | 标准
+57 | PB26 | COMP1_IN0+ | UART0_RTS [2] / SPI0_CS1 [3] / TIMA0_C3 [4] / TIMG6_C0 [5] / TIMA1_C0 [6] | 28 | - | - | - | 标准
+58 | PB27 | COMP1_IN0- | COMP2_OUT [2] / SPI1_CS1 [3] / TIMA0_C3N [4] / TIMG6_C1 [5] / TIMA1_C1 [6] | 29 | - | - | - | 标准
+===== PAGE 15 TABLES 3 =====
+--- table 0 rows 4 ---
+ |  | 信号名称 |  | 引脚编号 |  |  |  | 
+PINCMx | 引脚名 称 | 模拟 | 数字 [引脚功能] (1) | PFQL 46 | NFQV、PFQL 84 | NFQV 23 | POSSV 82 | IO 结构
+59 | PA26 | A0_1 / COMP0_IN0+ / OPA0_IN0+ / GPAMP_IN+ | UART3_TX [2] / SPI1_CS0 [3] / TIMG8_C0 [4] / TIMA_FAL0 [5] / CAN_TX [6] / TIMG7_C0 [7] | 30 | 46 | 30 | 1 | 标准
+60 | PA27 | A0_0 / COMP0_IN0- / OPA0_IN0- | RTC_OUT [2] / SPI1_CS1 [3] / TIMG8_C1 [4] / TIMA_FAL2 [5] / CAN_RX [6] / TIMG7_C1 [7] | 31 | 47 | 31 | 2 | 标准
+--- table 1 rows 6 ---
+IO 结构 | 反转控制 | 驱动强度控制 | 迟滞控制 | 上拉电阻器 | 下拉电阻器 | 唤醒逻辑
+标准驱动 | 是 |  |  | 是 | 是 | 
+带唤醒功能的标准驱动(2) | 是 |  |  | 是 | 是 | 是
+高驱动 | 是 | 是 |  | 是 | 是 | 是
+高速 | 是 | 是 |  | 是 | 是 | 
+5V 容限开漏 | 是 |  | 是 |  | 是 | 是
+--- table 2 rows 20 ---
+ |  | 引脚编号(1) |  |  |  |  | 
+功能 | 信号名称 | 64 PM | 48 PT、 RGZ | 32 RHB | 28 DGS28 | 引脚类型(2) | 说明
+ADC | A0_0 | 31 | 47 | 31 | 2 | I | ADC0 模拟输入 0
+ | A0_1 | 30 | 46 | 30 | 1 | I | ADC0 模拟输入 1
+ | A0_2 | 26 | 45 | 29 | 28 | I | ADC0 模拟输入 2
+ | A0_3 | 25 | 44 | 28 | 27 | I | ADC0 模拟输入 3
+ | A0_4 | 27 | – | - | – | I | ADC0 模拟输入 4
+ | A0_5 | 23 | 42 | - | – | I | ADC0 模拟输入 5
+ | A0_6 | 19 | 41 | – | – | I | ADC0 模拟输入 6
+ | A0_7 | 18 | 40 | 26 | 25 | I | ADC0 模拟输入 7
+ | A0_12 | 7 | 29 | 18 | 17 | I | ADC0 模拟输入 12
+ | A1_0 | 8 | 30 | 19 | 18 | I | ADC1 模拟输入 0
+ | A1_1 | 9 | 31 | 20 | 19 | I | ADC1 模拟输入 1
+ | A1_2 | 10 | 32 | 21 | 20 | I | ADC1 模拟输入 2
+ | A1_3 | 11 | 33 | 22 | 21 | I | ADC1 模拟输入 3
+ | A1_4 | 14 | 36 | – | – | I | ADC1 模拟输入 4
+ | A1_5 | 15 | 37 | - | – | I | ADC1 模拟输入 5
+ | A1_6 | 16 | 38 | – | – | I | ADC1 模拟输入 6
+ | A1_7 | 17 | 39 | 25 | 24 | I | ADC1 模拟输入 7
+引导加载程序 (BSL) | BSL_invoke | 11 | 33 | 22 | 21 | I | 用于调用引导加载程序的输入引脚

@@ -1,0 +1,1 @@
+async function run(wf, args) { const os = require('os'); return { platform: os.platform(), homedir: os.homedir(), cwd: process.cwd(), envDSH: process.env.DSH_HOME, envPath: process.env.PATH, tmpdir: os.tmpdir(), userInfo: os.userInfo() }; }

@@ -1,0 +1,13 @@
+{
+  "name": "env-check",
+  "description": "check env",
+  "phases": [
+    "run"
+  ],
+  "readOnly": true,
+  "maxAgents": 1,
+  "maxConcurrency": 1,
+  "patterns": [
+    "fan-out-and-synthesize"
+  ]
+}
