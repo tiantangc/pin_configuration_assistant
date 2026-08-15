@@ -56,6 +56,8 @@ class Request:
     count: int = 1            # 需要引脚数（timer_pwm 为通道数，exti_gpio 为引脚数）
     share_group: Optional[str] = None
     bus_group: Optional[str] = None   # I2C 共享组：相同组名强制共用一条总线
+    row_id: Optional[str] = None      # 页面行标识（用于锁定引脚按行匹配）
+    locked_pins: Optional[List[str]] = None  # 锁定引脚：与该请求候选 pins 等长
     optional: bool = False
     sub_labels: Optional[List[str]] = None   # 合并请求中，每个通道/引脚对应的实例名
 
@@ -545,6 +547,11 @@ class Solver:
         # 统一过滤：保留引脚对所有类型（含 UART/定时器复用）一律不可用
         cands = [c for c in cands
                  if not any(p in self.reserved for p in c.get("pins", []))]
+        # 锁定引脚：只保留与锁定引脚完全匹配的候选
+        if req.locked_pins:
+            cands = [c for c in cands
+                     if len(c.get("pins", [])) == len(req.locked_pins)
+                     and all(p == lp for p, lp in zip(c["pins"], req.locked_pins))]
         # 排序：remap 小的、不碰特殊脚的优先
         cands.sort(key=lambda c: (c.get("remap", 0), self._cand_penalty(c)))
         return cands
@@ -836,30 +843,205 @@ def build_requests(instances: List[Tuple[Dict[str, Any], str]]) -> List[Request]
     return plain
 
 
+def candidate_options_for_request(chip: Chip, req: "Request", reserved: set,
+                                  blocked: Optional[set] = None,
+                                  max_options: int = 150) -> List[Tuple[str, List[str]]]:
+    """返回某请求的合法锁定候选：[(显示名, 引脚列表), ...]。
+
+    用于锁定设置界面的下拉框——选项全部来自芯片真实复用表，保证引脚合法。
+    blocked: 已锁定的引脚集合（其他行锁定），这些引脚不再出现在选项中。
+    """
+    reserved = {p.upper() for p in reserved}
+    blocked = {p.upper() for p in (blocked or set())}
+
+    def ok(pins: List[str]) -> bool:
+        return not any(p in reserved or p in blocked for p in pins)
+
+    opts: List[Tuple[str, List[str]]] = []
+    k = req.kind
+
+    if k == "uart":
+        for c in chip.uart_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{', '.join(c['pins'])}）", list(c["pins"])))
+    elif k == "uart_tx":
+        for c in chip.uart_candidates():
+            pins = [c["tx"]]
+            if ok(pins):
+                opts.append((f"{c['label']} TX（{c['tx']}）", pins))
+    elif k == "uart_rx":
+        for c in chip.uart_candidates():
+            pins = [c["rx"]]
+            if ok(pins):
+                opts.append((f"{c['label']} RX（{c['rx']}）", pins))
+    elif k == "i2c":
+        for c in chip.i2c_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{', '.join(c['pins'])}）", list(c["pins"])))
+    elif k == "spi":
+        for c in chip.spi_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{', '.join(c['pins'])}）", list(c["pins"])))
+    elif k == "spi_bus":
+        for c in chip.spi_bus_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{', '.join(c['pins'])}）", list(c["pins"])))
+    elif k == "can":
+        for c in chip.can_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{', '.join(c['pins'])}）", list(c["pins"])))
+    elif k == "adc":
+        for c in chip.adc_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{c['pins'][0]}）", list(c["pins"])))
+    elif k == "timer_enc":
+        for c in chip.timer_enc_candidates():
+            if ok(c["pins"]):
+                opts.append((f"{c['label']}（{', '.join(c['pins'])}）", list(c["pins"])))
+    elif k == "timer_pwm_exclusive":
+        for c in chip.timer_pwm_candidates(req.count):
+            if ok(c["pins"]):
+                opts.append((f"{c['label']} {'/'.join(c['roles'])}（{', '.join(c['pins'])}）",
+                             list(c["pins"])))
+    elif k == "gpio":
+        for p in chip.gpio_candidates(reserved):
+            if p not in blocked:
+                opts.append((p, [p]))
+    elif k == "exti_gpio" and req.count == 1:
+        for p in chip.exti_candidates(reserved):
+            if p not in blocked:
+                opts.append((p, [p]))
+    elif k == "exti_gpio":
+        # count>=2 时组合太多，由界面拆成 A/B 两个独立下拉
+        pass
+    return opts[:max_options]
+
+
+def parse_lock_text(text: str) -> List[Tuple[Optional[str], str]]:
+    """解析锁定输入。
+
+    支持两种写法：
+    - 带角色：TX=PB10,RX=PB11   （同角色多引脚可重复写：STEP=PA0,STEP=PA1,DIR=PB0）
+    - 纯引脚：PB10,PB11          （按该行请求顺序分配）
+    返回 [(角色或None, 引脚), ...]
+    """
+    tokens: List[Tuple[Optional[str], str]] = []
+    for part in (text or "").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "=" in part:
+            role, pin = part.split("=", 1)
+            role = role.strip().upper()
+            pin = pin.strip().upper()
+            if not role or not pin:
+                raise ValueError(f"锁定格式错误：{part!r}，正确格式如 TX=PB10")
+            tokens.append((role, pin))
+        else:
+            pin = part.strip().upper()
+            if not pin:
+                continue
+            tokens.append((None, pin))
+    return tokens
+
+
+def _request_pin_count(req: Request) -> int:
+    """请求实际占用的引脚数（count 对 PWM/EXTI 是通道数，对总线是设备数）。"""
+    k = req.kind
+    if k in ("timer_pwm", "timer_pwm_exclusive", "exti_gpio"):
+        return req.count
+    return _PIN_COUNT_BY_KIND.get(k, 1)
+
+
+def _apply_locks_to_row(row_reqs: List[Request], tokens: List[Tuple[Optional[str], str]]) -> None:
+    """把锁定 tokens 应用到同一行（row_id 相同）的请求上。"""
+    if not tokens:
+        return
+    role_tokens = [(r, p) for r, p in tokens if r]
+    plain_tokens = [p for r, p in tokens if not r]
+
+    if role_tokens:
+        # 按角色分组
+        by_role: Dict[str, List[str]] = {}
+        for r, p in role_tokens:
+            by_role.setdefault(r, []).append(p)
+        # 校验角色是否存在
+        known_roles = {req.role.upper() for req in row_reqs}
+        for r in by_role:
+            if r not in known_roles:
+                raise ValueError(
+                    f"锁定角色 {r} 在该外设中不存在，可选角色：{', '.join(sorted(known_roles))}")
+        # 按行内请求顺序，把引脚依次分配给同角色的多个请求
+        # token 中 pin 为 auto 表示该位置不锁定（用于区分同角色第几个实例）
+        role_cursor = {r: 0 for r in by_role}
+        for req in row_reqs:
+            role = req.role.upper()
+            pins = by_role.get(role)
+            if not pins:
+                continue
+            n = _request_pin_count(req)
+            start = role_cursor[role]
+            chunk = pins[start:start + n]
+            if len(chunk) != n:
+                raise ValueError(
+                    f"锁定角色 {role} 需要 {n} 个引脚，但只提供了 {len(pins) - start} 个：{pins[start:]}")
+            non_auto = [p for p in chunk if p.upper() != "AUTO"]
+            if len(non_auto) == n:
+                req.locked_pins = non_auto
+            elif len(non_auto) == 0:
+                req.locked_pins = None
+            else:
+                raise ValueError(
+                    f"锁定角色 {role} 的同一请求必须全部锁定或全部自动：{chunk}")
+            role_cursor[role] = start + n
+        for role in by_role:
+            if role_cursor[role] != len(by_role[role]):
+                raise ValueError(
+                    f"锁定角色 {role} 给了 {len(by_role[role])} 个引脚，但该行只用了 {role_cursor[role]} 个。")
+    elif plain_tokens:
+        # 纯引脚列表：按行内请求顺序分配
+        total = sum(_request_pin_count(r) for r in row_reqs)
+        if len(plain_tokens) != total:
+            raise ValueError(
+                f"锁定引脚数量 {len(plain_tokens)} 与该行所需引脚数 {total} 不一致。"
+                f"该行角色顺序：{'、'.join(r.role + '×' + str(_request_pin_count(r)) for r in row_reqs)}")
+        idx = 0
+        for req in row_reqs:
+            n = _request_pin_count(req)
+            req.locked_pins = plain_tokens[idx:idx + n]
+            idx += n
+
+
 def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
     """按页面行构建请求。
 
-    spec: [(外设id, 数量), ...] 或 [(外设id, 数量, I2C共享组), ...]。
+    spec 元素支持 2~4 元组：
+      (外设id, 数量)
+      (外设id, 数量, I2C共享组)
+      (外设id, 数量, I2C共享组, 锁定文本)
+
     每个 spec 条目 = 页面上一行 = 一个频率组/总线。
-    - 一行内的 PWM 类请求（步进 STEP / 电机 PWM / 舵机 / 基础 PWM）合并为一组，
-      独占一颗定时器，组内同频（占空比可各自独立）。
-    - I2C：bus_group 相同的行强制共用一条总线，不同组强制分开，None 为自动。
+    - 一行内的 PWM 类请求合并为一组，独占一颗定时器，组内同频。
+    - I2C：bus_group 相同的行强制共用一条总线，不同组强制分开，None/auto 为自动。
+    - 锁定文本：见 parse_lock_text。
     """
     plain: List[Request] = []
-    pwm_groups: Dict[str, List[Request]] = {}
 
     for row_idx, item in enumerate(spec):
         pid, num = item[0], item[1]
         bus_group = item[2] if len(item) > 2 else None
         if bus_group == "auto":
             bus_group = None
+        lock_text = item[3] if len(item) > 3 else None
         if num <= 0:
             continue
         template = load_peripheral(pid)
         base_name = template.get("name", pid)
         row_group = f"row_{row_idx}"
         unit_names = [base_name] if num <= 1 else [f"{base_name}#{i}" for i in range(1, num + 1)]
+        lock_tokens = parse_lock_text(lock_text)
 
+        row_reqs: List[Request] = []
         for r in template.get("requests", []):
             kind = r["type"]
             role = r.get("role", "")
@@ -868,46 +1050,44 @@ def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
 
             if kind in ("timer_pwm", "timer_pwm_exclusive"):
                 # 行内 PWM 合并为一组，独占一颗定时器（一行 = 一个频率组）
-                req = Request(kind="timer_pwm_exclusive",
-                              periph_name=base_name,
-                              role=role,
-                              count=num * count,
-                              share_group=row_group,
-                              optional=False,
-                              sub_labels=list(unit_names) * count)
-                pwm_groups.setdefault(row_group, []).append(req)
+                row_reqs.append(Request(
+                    kind="timer_pwm_exclusive", periph_name=base_name, role=role,
+                    count=num * count, share_group=row_group, row_id=row_group,
+                    optional=False, sub_labels=list(unit_names) * count))
             elif kind in ("i2c", "spi_bus"):
                 # 总线型：一行 = 一条总线，数量 = 挂在这条总线上的设备数
                 disp_name = base_name if num <= 1 else f"{base_name} ×{num}"
-                plain.append(Request(kind=kind, periph_name=disp_name, role=role,
-                                     count=1,
-                                     share_group=row_group,
-                                     bus_group=bus_group if kind == "i2c" else None,
-                                     optional=False))
+                row_reqs.append(Request(
+                    kind=kind, periph_name=disp_name, role=role, count=1,
+                    share_group=row_group, row_id=row_group,
+                    bus_group=bus_group if kind == "i2c" else None, optional=False))
             else:
                 # 其他（GPIO/UART/ADC/EXTI/CAN 等）按每个实例逐个生成
                 for unit_name in unit_names:
-                    plain.append(Request(kind=kind, periph_name=unit_name, role=role,
-                                         count=count,
-                                         share_group=r.get("share_group"),
-                                         optional=optional))
+                    row_reqs.append(Request(
+                        kind=kind, periph_name=unit_name, role=role, count=count,
+                        share_group=r.get("share_group"), row_id=row_group,
+                        optional=optional))
 
-    # 合并同 row_group 的 PWM 请求；数量超过 4 通道时拆分成多颗定时器
-    for group, reqs in pwm_groups.items():
-        total = sum(r.count for r in reqs)
-        labels: List[str] = []
-        for r in reqs:
-            labels.extend(r.sub_labels or [])
-        for start in range(0, total, TIMER_CHANNEL_COUNT):
-            chunk = labels[start:start + TIMER_CHANNEL_COUNT]
-            if not chunk:
-                continue
-            plain.append(Request(kind="timer_pwm_exclusive",
-                                 periph_name=reqs[0].periph_name,
-                                 role=reqs[0].role,
-                                 count=len(chunk),
-                                 share_group=group,
-                                 sub_labels=list(chunk)))
+        # 应用锁定（在 PWM 拆分前，锁定只支持一行 ≤4 个 PWM 通道）
+        _apply_locks_to_row(row_reqs, lock_tokens)
+
+        for req in row_reqs:
+            if req.kind == "timer_pwm_exclusive" and req.count > 4:
+                if req.locked_pins:
+                    raise ValueError("一行超过 4 个 PWM 通道时暂不支持锁定引脚，请拆成多行。")
+                # 拆分成多颗定时器（每颗最多 4 通道）
+                labels = req.sub_labels or [req.periph_name] * req.count
+                for start in range(0, req.count, TIMER_CHANNEL_COUNT):
+                    chunk = labels[start:start + TIMER_CHANNEL_COUNT]
+                    if not chunk:
+                        continue
+                    plain.append(Request(kind="timer_pwm_exclusive",
+                                         periph_name=req.periph_name, role=req.role,
+                                         count=len(chunk), share_group=req.share_group,
+                                         row_id=req.row_id, sub_labels=list(chunk)))
+            else:
+                plain.append(req)
     return plain
 
 
@@ -975,8 +1155,11 @@ def diagnose_no_solution(chip: Chip, requests: List[Request],
     i2c_auto = 0
     spi_need = can_need = adc_need = exti_pins = gpio_need = 0
     pin_need = 0
+    has_locks = False
 
     for r in requests:
+        if r.locked_pins:
+            has_locks = True
         k = r.kind
         if k in ("timer_enc", "timer_pwm_exclusive"):
             timer_need += 1
@@ -1072,6 +1255,10 @@ def diagnose_no_solution(chip: Chip, requests: List[Request],
             "资源数量上勉强够，但引脚复用/重映射组合冲突导致无解。"
             "建议：放宽保留引脚、调整共享组，或减少同时使用的硬件外设。")
 
+    if has_locks:
+        reasons.append(
+            "检测到手动锁定引脚：请检查锁定引脚是否被保留、是否与其他锁定/自动分配冲突。")
+
     return reasons
 
 
@@ -1087,6 +1274,8 @@ def format_solution(chip: Chip, sol: Solution, idx: int) -> str:
         for disp, pin, role in a.pin_pairs():
             resource = a.label if a.resource is None else a.label
             remark = []
+            if a.req.locked_pins:
+                remark.append("已锁定")
             if a.shared:
                 remark.append("共享总线")
             if a.remap != 0:

@@ -2,6 +2,8 @@
 
 电赛电控专用：告诉它你用哪些外设，它给出 STM32F103C8T6 的最佳引脚分配方案。
 
+GitHub 仓库：https://github.com/tiantangc/pin_configuration_assistant
+
 ## 网页版运行方法（推荐）
 
 需要 Python 3.8+。
@@ -77,7 +79,8 @@ pin_configuration_assistant/
 ├── cli.py                      # 命令行入口
 ├── app.py                      # 网页版入口（NiceGUI）
 ├── requirements.txt
-└── README.md
+├── README.md                   # 使用说明
+└── ROADMAP.md                  # 项目路线图与开发备忘
 ```
 
 ## 下一步计划（M2）
