@@ -69,6 +69,7 @@ reserve_rows: List[Dict[str, Any]] = []
 reserve_rows_container = None
 result_html = None
 result_cards = None
+preview_html = None
 current_solutions: List[Any] = []
 current_spec: List[Tuple] = []
 export_dialog = None
@@ -77,6 +78,10 @@ export_format_select = None
 pending_export_idx = 0
 pinout_dialog = None
 pinout_dialog_html = None
+pinout_dl_dialog = None
+pinout_dl_name_input = None
+pinout_dl_fmt_select = None
+pending_pinout_svg = ""
 
 # 引脚下拉选项：引脚名 + 默认功能备注
 pin_options = {}
@@ -125,9 +130,16 @@ def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
             sel = ui.select(periph_options, value=pid).classes("w-96")
             share_sel = ui.select(BUS_GROUP_OPTIONS, value=bus_group).classes("w-56")
             share_sel.set_visibility(pid in I2C_PERIPH_IDS)
-            sel.on_value_change(lambda e: share_sel.set_visibility(e.value in I2C_PERIPH_IDS))
+
+            def on_sel_change(e):
+                share_sel.set_visibility(e.value in I2C_PERIPH_IDS)
+                refresh_preview()
+
+            sel.on_value_change(on_sel_change)
             cnt = ui.number("数量", value=count, min=0, max=16, format="%.0f").classes("w-24")
+            cnt.on_value_change(lambda e: refresh_preview())
             remark_input = ui.input("备注", value=remark, placeholder="如 蓝牙").classes("w-36")
+            remark_input.on_value_change(lambda e: refresh_preview())
             lock_btn = ui.button("🔓 未锁定", on_click=None).props("flat color=blue")
             delete_btn = ui.button("✖").props("flat dense color=red")
         # 锁定设置对话框
@@ -144,6 +156,104 @@ def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
     delete_btn.on_click(lambda: delete_row(row_data))
     rows.append(row_data)
     renumber_rows()
+    refresh_preview()
+
+
+def _locked_pin_labels() -> Dict[str, List[str]]:
+    """从页面行收集锁定引脚信息：{pin: [描述]}。"""
+    labels: Dict[str, List[str]] = {}
+    for r in rows:
+        lock_text = (r.get("lock_text") or "").strip()
+        if not lock_text:
+            continue
+        pid = r["select"].value
+        try:
+            cnt = int(r["count"].value or 0)
+        except Exception:
+            cnt = 0
+        remark = (r["remark_input"].value or "").strip()
+        name = periph_options.get(pid, pid)
+        # 去掉下拉选项里的描述文字，只留图标和名字
+        if " —— " in name:
+            name = name.split(" —— ")[0]
+        if cnt > 1:
+            name += f" ×{cnt}"
+        if remark:
+            name += f"[{remark}]"
+        for role, pin in parse_lock_text(lock_text):
+            if not pin or pin.upper() == "AUTO":
+                continue
+            label = f"{name} {role}" if role else name
+            labels.setdefault(pin, [])
+            if label not in labels[pin]:
+                labels[pin].append(label)
+    return labels
+
+
+def _reserved_pin_info() -> Dict[str, str]:
+    """从页面保留行收集：{pin: remark}。"""
+    return {r["select"].value: (r["remark_input"].value or "").strip()
+            for r in reserve_rows if r["select"].value}
+
+
+def preview_board_svg(chip: Chip, locked_pins: Dict[str, List[str]],
+                      reserved_pins: Dict[str, str]) -> str:
+    """设置界面顶部的最小系统板预览图，悬停显示锁定/保留信息。"""
+    parts = ['<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:1000px;height:auto">']
+    parts.append('<rect width="800" height="260" fill="white"/>')
+    parts.append('<rect x="20" y="40" width="760" height="150" rx="8" fill="#d1d5db" stroke="#9ca3af"/>')
+
+    def draw_row(pins, y):
+        for i, pin in enumerate(pins):
+            x = 35 + i * 37
+            std = _norm_board_pin(pin)
+            info_lines = [f"{pin}"]
+            if std in reserved_pins:
+                remark = reserved_pins[std]
+                info_lines.append("保留" + (f"：{remark}" if remark else ""))
+                color = "#ef4444"
+            elif std in locked_pins:
+                info_lines.append("锁定：" + "、".join(locked_pins[std]))
+                color = "#f59e0b"
+            else:
+                info_lines.append("空闲")
+                color = "#e5e7eb"
+            title = "&#10;".join(info_lines)
+            cx = x + 17
+            cy = y + 22
+            # 整组（色块+文字）都响应悬停
+            parts.append(f'<g><title>{title}</title>')
+            parts.append(f'<rect x="{x}" y="{y}" width="34" height="34" fill="{color}" '
+                         f'stroke="#374151" stroke-width="0.5"/>')
+            parts.append(f'<text x="{cx}" y="{cy}" text-anchor="middle" font-size="10" '
+                         f'fill="#111827" pointer-events="none">{pin}</text></g>')
+
+    draw_row(BOARD_ROW1, 70)
+    draw_row(BOARD_ROW2, 130)
+
+    parts.append('<text x="8" y="90" text-anchor="middle" font-size="10" fill="#374151" '
+                 'transform="rotate(-90, 8, 90)">第一排</text>')
+    parts.append('<text x="8" y="150" text-anchor="middle" font-size="10" fill="#374151" '
+                 'transform="rotate(-90, 8, 150)">第二排</text>')
+
+    legend = [("#f59e0b", "锁定"), ("#ef4444", "保留"), ("#e5e7eb", "空闲")]
+    cx = 30
+    for color, label in legend:
+        parts.append(f'<rect x="{cx}" y="215" width="12" height="12" fill="{color}" '
+                     f'stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 14}" y="{225}" font-size="11" fill="#111827">{label}</text>')
+        cx += 70
+    parts.append('<text x="270" y="225" font-size="10" fill="#6b7280">鼠标悬停引脚可查看详情</text>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def refresh_preview() -> None:
+    """刷新设置界面的引脚预览图。"""
+    if preview_html is None:
+        return
+    preview_html.set_content(preview_board_svg(chip, _locked_pin_labels(), _reserved_pin_info()))
 
 
 def renumber_rows() -> None:
@@ -300,6 +410,7 @@ def save_locks(row_data: Dict[str, Any], lock_controls: List[Dict[str, Any]]) ->
     row_data["lock_text"] = lock_text
     row_data["lock_btn"].set_text("🔒 已锁定" if lock_text else "🔓 未锁定")
     row_data["lock_dialog"].close()
+    refresh_preview()
 
 
 def solution_to_export_rows(spec: List[Tuple], sol) -> List[Dict[str, Any]]:
@@ -828,6 +939,75 @@ def show_large_pinout(svg: str) -> None:
     pinout_dialog.open()
 
 
+def ask_download_pinout(svg: str, default_name: str) -> None:
+    """弹窗确认文件名后下载 SVG 引脚图。"""
+    global pending_pinout_svg
+    pending_pinout_svg = svg
+    pinout_dl_name_input.value = default_name
+    pinout_dl_dialog.open()
+
+
+def do_download_pinout() -> None:
+    """确认文件名和格式后执行引脚图下载。"""
+    name = (pinout_dl_name_input.value or "").strip()
+    if not name:
+        ui.notify("请输入文件名。", type="negative")
+        return
+    fmt = pinout_dl_fmt_select.value or "svg"
+    ext_map = {"svg": ".svg", "png": ".png", "jpg": ".jpg"}
+    base = name
+    for ext in ext_map.values():
+        if base.endswith(ext):
+            base = base[: -len(ext)]
+            break
+    filename = base + ext_map[fmt]
+
+    if fmt == "svg":
+        ui.download(pending_pinout_svg.encode("utf-8"), filename=filename,
+                    media_type="image/svg+xml")
+    else:
+        mime = "image/png" if fmt == "png" else "image/jpeg"
+        quality = 1.0 if fmt == "png" else 0.95
+        # 浏览器端 Canvas 把 SVG 渲染成 PNG/JPG 再下载
+        js = f"""
+        (() => {{
+            const svg = {json.dumps(pending_pinout_svg)};
+            const blob = new Blob([svg], {{type: 'image/svg+xml;charset=utf-8'}});
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {{
+                const vb = svg.match(/viewBox="([^"]+)"/);
+                let vbW = 800, vbH = 600;
+                if (vb) {{
+                    const p = vb[1].trim().split(/\\s+/).map(Number);
+                    vbW = p[2] || 800;
+                    vbH = p[3] || 600;
+                }}
+                const scale = 4;
+                const w = vbW * scale;
+                const h = vbH * scale;
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                URL.revokeObjectURL(url);
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL({json.dumps(mime)}, {quality});
+                a.download = {json.dumps(filename)};
+                a.click();
+            }};
+            img.onerror = () => {{ URL.revokeObjectURL(url); }};
+            img.src = url;
+        }})();
+        """
+        ui.run_javascript(js)
+    ui.notify(f"已开始下载：{filename}", type="positive")
+    pinout_dl_dialog.close()
+
+
 def ask_export(idx: int) -> None:
     """先让用户确认/修改文件名，再下载。"""
     global pending_export_idx
@@ -981,6 +1161,7 @@ def delete_row(row_data: Dict[str, Any]) -> None:
     except Exception:
         pass
     renumber_rows()
+    refresh_preview()
 
 
 def clear_all_rows() -> None:
@@ -997,6 +1178,7 @@ def clear_all_rows() -> None:
         except Exception:
             pass
     rows = []
+    refresh_preview()
 
 
 def load_default_scenario() -> None:
@@ -1014,13 +1196,16 @@ def add_reserve_row(pin: str = None, remark: str = "") -> None:
         with ui.row().classes("items-center gap-2") as row:
             num_label = ui.label("").classes("w-6 text-right text-gray-500")
             sel = ui.select(pin_options, value=pin).classes("w-96")
+            sel.on_value_change(lambda e: refresh_preview())
             remark_input = ui.input("备注", value=remark, placeholder="如 板载LED").classes("w-36")
+            remark_input.on_value_change(lambda e: refresh_preview())
             del_btn = ui.button("✖").props("flat dense color=red")
     row_data = {"row": row, "select": sel, "num_label": num_label,
                 "remark_input": remark_input, "del_btn": del_btn}
     del_btn.on_click(lambda: delete_reserve_row(row_data))
     reserve_rows.append(row_data)
     renumber_reserve_rows()
+    refresh_preview()
 
 
 def delete_reserve_row(row_data) -> None:
@@ -1033,6 +1218,7 @@ def delete_reserve_row(row_data) -> None:
     except Exception:
         pass
     renumber_reserve_rows()
+    refresh_preview()
 
 
 def clear_all_reserve_rows() -> None:
@@ -1045,6 +1231,7 @@ def clear_all_reserve_rows() -> None:
         except Exception:
             pass
     reserve_rows = []
+    refresh_preview()
 
 
 def load_default_reserve() -> None:
@@ -1052,6 +1239,7 @@ def load_default_reserve() -> None:
     clear_all_reserve_rows()
     for pin in sorted(chip.default_reserved):
         add_reserve_row(pin)
+    refresh_preview()
 
 
 def on_solve() -> None:
@@ -1116,11 +1304,15 @@ def on_solve() -> None:
                 with ui.expansion("🔲 芯片引脚图（LQFP48）").classes("w-full border rounded"):
                     chip_svg = chip_pinout_svg(chip, sol, reserved_set, reserved_remarks)
                     ui.html(chip_svg).classes("w-full")
-                    ui.button("🔍 查看大图", on_click=lambda svg=chip_svg: show_large_pinout(svg)).props("flat color=blue")
+                    with ui.row().classes("gap-2"):
+                        ui.button("🔍 查看大图", on_click=lambda svg=chip_svg: show_large_pinout(svg)).props("flat color=blue")
+                        ui.button("⬇ 下载此图", on_click=lambda svg=chip_svg, i=i: ask_download_pinout(svg, f"方案{i}_芯片引脚图")).props("flat color=green")
                 with ui.expansion("🔌 最小系统板引脚图").classes("w-full border rounded"):
                     board_svg = board_pinout_svg(chip, sol, reserved_set, reserved_remarks)
                     ui.html(board_svg).classes("w-full")
-                    ui.button("🔍 查看大图", on_click=lambda svg=board_svg: show_large_pinout(svg)).props("flat color=blue")
+                    with ui.row().classes("gap-2"):
+                        ui.button("🔍 查看大图", on_click=lambda svg=board_svg: show_large_pinout(svg)).props("flat color=blue")
+                        ui.button("⬇ 下载此图", on_click=lambda svg=board_svg, i=i: ask_download_pinout(svg, f"方案{i}_最小系统板引脚图")).props("flat color=green")
                 ui.button(f"⬇ 导出方案{i}",
                           on_click=lambda i=i: ask_export(i - 1)).props("flat color=green")
 
@@ -1152,6 +1344,13 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
             "下拉框只列合法选项。"
         ).classes("text-xs text-gray-500 mt-2")
 
+    ui.markdown("#### 引脚预览（锁定 / 保留）")
+    with ui.card().classes("w-full p-3"):
+        preview_html = ui.html("").classes("w-full")
+        ui.markdown(
+            "橙色=已锁定，红色=保留，浅灰=空闲；鼠标悬停引脚查看具体信息。"
+        ).classes("text-xs text-gray-500 mt-2")
+
     ui.markdown("#### 第二步：设置保留引脚（分配时绝不使用这些引脚）")
     with ui.card().classes("w-full p-3"):
         with ui.column().classes("w-full gap-2") as reserve_rows_container:
@@ -1170,6 +1369,10 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
     with ui.column().classes("w-full gap-2") as result_cards:
         pass
 
+    # 水印
+    ui.label("福州大学物理与信息工程学院 · 长江七号 tiantangc") \
+        .classes("w-full text-center text-gray-400 text-xs mt-4")
+
     # 导出文件名确认对话框
     with ui.dialog() as export_dialog, ui.card().classes("w-96"):
         ui.label("确认导出的文件名和格式").classes("font-bold")
@@ -1182,6 +1385,17 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
     # 引脚图大图对话框
     with ui.dialog() as pinout_dialog, ui.card().classes("w-full max-w-7xl"):
         pinout_dialog_html = ui.html("").classes("w-full")
+
+    # 引脚图下载文件名确认对话框
+    with ui.dialog() as pinout_dl_dialog, ui.card().classes("w-96"):
+        ui.label("确认引脚图文件名和格式").classes("font-bold")
+        pinout_dl_name_input = ui.input("文件名", value="").classes("w-full")
+        pinout_dl_fmt_select = ui.select(
+            {"svg": "SVG（矢量，可无限放大）", "png": "PNG（高清位图）", "jpg": "JPG（通用图片）"},
+            value="svg").classes("w-full")
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("确认下载", on_click=do_download_pinout).props("color=blue")
+            ui.button("取消", on_click=lambda: pinout_dl_dialog.close()).props("flat")
 
     # 页面打开时默认载入你的痛点场景和默认保留引脚
     load_default_scenario()
