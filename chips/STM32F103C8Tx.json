@@ -1,0 +1,114 @@
+{
+  "id": "STM32F103C8Tx",
+  "name": "STM32F103C8T6",
+  "package": "LQFP48",
+  "family": "STM32F1",
+  "description": "STM32F103C8T6 LQFP48, 72MHz, 64KB Flash, 20KB RAM",
+  "timer_channels_per_group": 4,
+  "pins": {
+    "PA0":  {"gpio": true, "exti": 0, "adc": ["ADC1_IN0", "ADC2_IN0"],  "default": "PA0",  "notes": ["WKUP"]},
+    "PA1":  {"gpio": true, "exti": 1, "adc": ["ADC1_IN1", "ADC2_IN1"],  "default": "PA1",  "notes": []},
+    "PA2":  {"gpio": true, "exti": 2, "adc": ["ADC1_IN2", "ADC2_IN2"],  "default": "PA2",  "notes": []},
+    "PA3":  {"gpio": true, "exti": 3, "adc": ["ADC1_IN3", "ADC2_IN3"],  "default": "PA3",  "notes": []},
+    "PA4":  {"gpio": true, "exti": 4, "adc": ["ADC1_IN4", "ADC2_IN4"],  "default": "PA4",  "notes": []},
+    "PA5":  {"gpio": true, "exti": 5, "adc": ["ADC1_IN5", "ADC2_IN5"],  "default": "PA5",  "notes": []},
+    "PA6":  {"gpio": true, "exti": 6, "adc": ["ADC1_IN6", "ADC2_IN6"],  "default": "PA6",  "notes": []},
+    "PA7":  {"gpio": true, "exti": 7, "adc": ["ADC1_IN7", "ADC2_IN7"],  "default": "PA7",  "notes": []},
+    "PA8":  {"gpio": true, "exti": 8, "adc": null, "default": "PA8",  "notes": ["MCO"]},
+    "PA9":  {"gpio": true, "exti": 9, "adc": null, "default": "PA9",  "notes": []},
+    "PA10": {"gpio": true, "exti": 10, "adc": null, "default": "PA10", "notes": []},
+    "PA11": {"gpio": true, "exti": 11, "adc": null, "default": "PA11", "notes": ["USB_DM"]},
+    "PA12": {"gpio": true, "exti": 12, "adc": null, "default": "PA12", "notes": ["USB_DP"]},
+    "PA13": {"gpio": true, "exti": 13, "adc": null, "default": "PA13", "notes": ["JTMS/SWDIO", "默认调试口"]},
+    "PA14": {"gpio": true, "exti": 14, "adc": null, "default": "PA14", "notes": ["JTCK/SWCLK", "默认调试口"]},
+    "PA15": {"gpio": true, "exti": 15, "adc": null, "default": "PA15", "notes": ["JTDI", "作 GPIO/复用需关闭 JTAG"]},
+    "PB0":  {"gpio": true, "exti": 0, "adc": ["ADC1_IN8", "ADC2_IN8"],  "default": "PB0",  "notes": []},
+    "PB1":  {"gpio": true, "exti": 1, "adc": ["ADC1_IN9", "ADC2_IN9"],  "default": "PB1",  "notes": []},
+    "PB2":  {"gpio": true, "exti": 2, "adc": null, "default": "PB2",  "notes": ["BOOT1", "启动选择脚，默认保留"]},
+    "PB3":  {"gpio": true, "exti": 3, "adc": null, "default": "PB3",  "notes": ["JTDO", "作 GPIO/复用需关闭 JTAG"]},
+    "PB4":  {"gpio": true, "exti": 4, "adc": null, "default": "PB4",  "notes": ["NJTRST", "作 GPIO/复用需关闭 JTAG"]},
+    "PB5":  {"gpio": true, "exti": 5, "adc": null, "default": "PB5",  "notes": []},
+    "PB6":  {"gpio": true, "exti": 6, "adc": null, "default": "PB6",  "notes": []},
+    "PB7":  {"gpio": true, "exti": 7, "adc": null, "default": "PB7",  "notes": []},
+    "PB8":  {"gpio": true, "exti": 8, "adc": null, "default": "PB8",  "notes": []},
+    "PB9":  {"gpio": true, "exti": 9, "adc": null, "default": "PB9",  "notes": []},
+    "PB10": {"gpio": true, "exti": 10, "adc": null, "default": "PB10", "notes": []},
+    "PB11": {"gpio": true, "exti": 11, "adc": null, "default": "PB11", "notes": []},
+    "PB12": {"gpio": true, "exti": 12, "adc": null, "default": "PB12", "notes": []},
+    "PB13": {"gpio": true, "exti": 13, "adc": null, "default": "PB13", "notes": []},
+    "PB14": {"gpio": true, "exti": 14, "adc": null, "default": "PB14", "notes": []},
+    "PB15": {"gpio": true, "exti": 15, "adc": null, "default": "PB15", "notes": []},
+    "PC13": {"gpio": true, "exti": 13, "adc": null, "default": "PC13", "notes": ["TAMPER-RTC", "驱动能力弱"]},
+    "PC14": {"gpio": true, "exti": 14, "adc": null, "default": "PC14", "notes": ["OSC32_IN", "不用 LSE 可作 GPIO"]},
+    "PC15": {"gpio": true, "exti": 15, "adc": null, "default": "PC15", "notes": ["OSC32_OUT", "不用 LSE 可作 GPIO"]},
+    "PD0":  {"gpio": false, "exti": 0, "adc": null, "default": "PD0", "notes": ["OSC_IN", "HSE 晶振专用"]},
+    "PD1":  {"gpio": false, "exti": 1, "adc": null, "default": "PD1", "notes": ["OSC_OUT", "HSE 晶振专用"]}
+  },
+  "peripheral_groups": {
+    "UART": {
+      "USART1": [
+        {"remap": 0, "label": "USART1 默认", "tx": "PA9", "rx": "PA10"},
+        {"remap": 1, "label": "USART1 重映射", "tx": "PB6", "rx": "PB7"}
+      ],
+      "USART2": [
+        {"remap": 0, "label": "USART2 默认", "tx": "PA2", "rx": "PA3"}
+      ],
+      "USART3": [
+        {"remap": 0, "label": "USART3 默认", "tx": "PB10", "rx": "PB11"}
+      ]
+    },
+    "I2C": {
+      "I2C1": [
+        {"remap": 0, "label": "I2C1 默认", "scl": "PB6", "sda": "PB7"},
+        {"remap": 1, "label": "I2C1 重映射", "scl": "PB8", "sda": "PB9"}
+      ],
+      "I2C2": [
+        {"remap": 0, "label": "I2C2 默认", "scl": "PB10", "sda": "PB11"}
+      ]
+    },
+    "SPI": {
+      "SPI1": [
+        {"remap": 0, "label": "SPI1 默认", "nss": "PA4", "sck": "PA5", "miso": "PA6", "mosi": "PA7"},
+        {"remap": 1, "label": "SPI1 重映射", "nss": "PA15", "sck": "PB3", "miso": "PB4", "mosi": "PB5"}
+      ],
+      "SPI2": [
+        {"remap": 0, "label": "SPI2 默认", "nss": "PB12", "sck": "PB13", "miso": "PB14", "mosi": "PB15"}
+      ]
+    },
+    "CAN": {
+      "CAN1": [
+        {"remap": 0, "label": "CAN1 默认", "rx": "PA11", "tx": "PA12"},
+        {"remap": 1, "label": "CAN1 重映射", "rx": "PB8", "tx": "PB9"}
+      ]
+    },
+    "TIMER": {
+      "TIM1": [
+        {"remap": 0, "label": "TIM1 默认", "channels": {"1": "PA8", "2": "PA9", "3": "PA10", "4": "PA11"}}
+      ],
+      "TIM2": [
+        {"remap": 0, "label": "TIM2 默认", "channels": {"1": "PA0", "2": "PA1", "3": "PA2", "4": "PA3"}},
+        {"remap": 1, "label": "TIM2 部分重映射1", "channels": {"1": "PA15", "2": "PB3", "3": "PA2", "4": "PA3"}},
+        {"remap": 2, "label": "TIM2 部分重映射2", "channels": {"1": "PA0", "2": "PA1", "3": "PB10", "4": "PB11"}},
+        {"remap": 3, "label": "TIM2 完全重映射", "channels": {"1": "PA15", "2": "PB3", "3": "PB10", "4": "PB11"}}
+      ],
+      "TIM3": [
+        {"remap": 0, "label": "TIM3 默认", "channels": {"1": "PA6", "2": "PA7", "3": "PB0", "4": "PB1"}},
+        {"remap": 1, "label": "TIM3 部分重映射", "channels": {"1": "PB4", "2": "PB5", "3": "PB0", "4": "PB1"}}
+      ],
+      "TIM4": [
+        {"remap": 0, "label": "TIM4 默认", "channels": {"1": "PB6", "2": "PB7", "3": "PB8", "4": "PB9"}}
+      ]
+    }
+  },
+  "reserved_pins_by_default": ["PA13", "PA14", "PB2", "PD0", "PD1"],
+  "penalty_pins": {
+    "PB3": "JTDO，需关闭 JTAG 才能用",
+    "PB4": "NJTRST，需关闭 JTAG 才能用",
+    "PA15": "JTDI，需关闭 JTAG 才能用",
+    "PC13": "TAMPER-RTC，驱动能力弱",
+    "PC14": "OSC32_IN，不用 LSE 才可用",
+    "PC15": "OSC32_OUT，不用 LSE 才可用",
+    "PA11": "USB_DM，用 USB 时不能占用",
+    "PA12": "USB_DP，用 USB 时不能占用"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "uart",
+  "name": "UART串口",
+  "icon": "🔌",
+  "description": "全双工串口（TX+RX），如串口屏、数传、GPS 等",
+  "requests": [
+    {"type": "uart", "role": "UART", "count": 1}
+  ]
+}

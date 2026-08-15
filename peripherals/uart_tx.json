@@ -1,0 +1,9 @@
+{
+  "id": "uart_tx",
+  "name": "UART仅TX",
+  "icon": "📤",
+  "description": "只发不收（如单向数据上报、调试打印）",
+  "requests": [
+    {"type": "uart_tx", "role": "UART仅TX", "count": 1}
+  ]
+}

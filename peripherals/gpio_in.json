@@ -1,0 +1,9 @@
+{
+  "id": "gpio_in",
+  "name": "GPIO输入",
+  "icon": "🔘",
+  "description": "普通数字输入（按键、限位开关、光电开关等）",
+  "requests": [
+    {"type": "gpio", "role": "GPIO输入", "count": 1}
+  ]
+}

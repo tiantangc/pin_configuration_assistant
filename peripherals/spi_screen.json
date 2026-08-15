@@ -1,0 +1,12 @@
+{
+  "id": "spi_screen",
+  "name": "SPI屏幕",
+  "icon": "📟",
+  "description": "SPI 屏（SPI + DC + RST，BL 背光可选）",
+  "requests": [
+    {"type": "spi", "role": "SPI总线", "count": 1},
+    {"type": "gpio", "role": "DC", "count": 1},
+    {"type": "gpio", "role": "RST", "count": 1},
+    {"type": "gpio", "role": "BL", "count": 1, "optional": true}
+  ]
+}

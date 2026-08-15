@@ -1,0 +1,9 @@
+{
+  "id": "i2c_screen",
+  "name": "I2C屏幕",
+  "icon": "🖥️",
+  "description": "OLED / I2C LCD 屏，常见地址 0x3C，可与 MPU6050 共用 I2C 总线",
+  "requests": [
+    {"type": "i2c", "role": "I2C总线", "count": 1}
+  ]
+}

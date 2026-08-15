@@ -1,0 +1,9 @@
+{
+  "id": "gpio_out",
+  "name": "GPIO输出",
+  "icon": "💡",
+  "description": "普通数字输出（LED、蜂鸣器、继电器、使能脚等）",
+  "requests": [
+    {"type": "gpio", "role": "GPIO输出", "count": 1}
+  ]
+}

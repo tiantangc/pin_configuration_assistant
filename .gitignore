@@ -1,0 +1,19 @@
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 本地配置
+.env

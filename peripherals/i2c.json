@@ -1,0 +1,9 @@
+{
+  "id": "i2c",
+  "name": "I2C总线",
+  "icon": "🔗",
+  "description": "一行 = 一条 I2C 总线（SCL/SDA）；数量 = 挂在这条总线上的从机数（从机地址需不同）",
+  "requests": [
+    {"type": "i2c", "role": "I2C", "count": 1}
+  ]
+}

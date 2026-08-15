@@ -1,0 +1,10 @@
+{
+  "id": "spi",
+  "name": "SPI总线",
+  "icon": "🖧",
+  "description": "一行 = 一条 SPI 总线（共享 SCK/MISO/MOSI）；数量 = 从机数，每个从机一个独立 NSS（GPIO 软件片选）",
+  "requests": [
+    {"type": "spi_bus", "role": "SPI总线", "count": 1},
+    {"type": "gpio", "role": "NSS", "count": 1}
+  ]
+}

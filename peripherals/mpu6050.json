@@ -1,0 +1,9 @@
+{
+  "id": "mpu6050",
+  "name": "MPU6050",
+  "icon": "📐",
+  "description": "六轴姿态传感器，I2C 从机地址 0x68，可与 I2C 屏共用总线",
+  "requests": [
+    {"type": "i2c", "role": "I2C总线", "count": 1}
+  ]
+}

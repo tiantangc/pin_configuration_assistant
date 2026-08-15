@@ -1,0 +1,9 @@
+{
+  "id": "exti_in",
+  "name": "EXTI中断输入",
+  "icon": "⚡",
+  "description": "外部中断输入（编码器A/B相、急停、霍尔传感器等）",
+  "requests": [
+    {"type": "exti_gpio", "role": "EXTI输入", "count": 1}
+  ]
+}

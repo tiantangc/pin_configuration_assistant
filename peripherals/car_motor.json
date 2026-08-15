@@ -1,0 +1,11 @@
+{
+  "id": "car_motor",
+  "name": "小车电机",
+  "icon": "🚗",
+  "description": "直流减速电机（TB6612/A4950 等），1 路 PWM 调速 + 2 个方向脚",
+  "requests": [
+    {"type": "timer_pwm", "role": "PWM", "count": 1, "share_group": "car_pwm"},
+    {"type": "gpio", "role": "IN1", "count": 1},
+    {"type": "gpio", "role": "IN2", "count": 1}
+  ]
+}

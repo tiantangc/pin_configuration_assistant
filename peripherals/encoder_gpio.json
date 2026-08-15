@@ -1,0 +1,9 @@
+{
+  "id": "encoder_gpio",
+  "name": "GPIO模拟编码器",
+  "icon": "🔀",
+  "description": "用外部中断（EXTI）模拟正交编码器，A/B 两相需不同 EXTI 线",
+  "requests": [
+    {"type": "exti_gpio", "role": "A/B相", "count": 2}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "can",
+  "name": "CAN总线",
+  "icon": "🚌",
+  "description": "CAN 总线（需外部收发器），如大疆电机、CAN 传感器",
+  "requests": [
+    {"type": "can", "role": "CAN", "count": 1}
+  ]
+}

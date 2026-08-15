@@ -1,0 +1,9 @@
+{
+  "id": "openmv",
+  "name": "OpenMV",
+  "icon": "📷",
+  "description": "OpenMV 视觉模块，通过串口与主控通信",
+  "requests": [
+    {"type": "uart", "role": "串口", "count": 1}
+  ]
+}

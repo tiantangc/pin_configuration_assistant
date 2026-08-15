@@ -1,0 +1,11 @@
+{
+  "id": "stepper_motor",
+  "name": "步进电机",
+  "icon": "🦿",
+  "description": "每行一组：同组共用一个定时器（同转速）；要不同转速就添加多行（如两行×2=前两个同速、后两个同速）",
+  "requests": [
+    {"type": "timer_pwm", "role": "STEP", "count": 1, "share_group": "stepper_steps"},
+    {"type": "gpio", "role": "DIR", "count": 1},
+    {"type": "gpio", "role": "EN", "count": 1, "optional": true}
+  ]
+}

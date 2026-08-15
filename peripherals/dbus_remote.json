@@ -1,0 +1,9 @@
+{
+  "id": "dbus_remote",
+  "name": "DBUS遥控器",
+  "icon": "🎮",
+  "description": "大疆/DBUS 遥控接收机（UART 仅 RX，100000 波特率）",
+  "requests": [
+    {"type": "uart_rx", "role": "DBUS接收", "count": 1}
+  ]
+}

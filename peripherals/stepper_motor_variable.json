@@ -1,0 +1,12 @@
+{
+  "id": "stepper_motor_variable",
+  "name": "步进电机·独立转速（已合并）",
+  "icon": "🦿",
+  "description": "已合并到「步进电机」：每行一组，组内同速，组间独立",
+  "hidden": true,
+  "requests": [
+    {"type": "timer_pwm_exclusive", "role": "STEP", "count": 1},
+    {"type": "gpio", "role": "DIR", "count": 1},
+    {"type": "gpio", "role": "EN", "count": 1, "optional": true}
+  ]
+}

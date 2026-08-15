@@ -1,0 +1,9 @@
+{
+  "id": "uart_rx",
+  "name": "UART仅RX",
+  "icon": "📥",
+  "description": "只收不发（如 DBUS 遥控器、GPS、视觉模块单向回传）",
+  "requests": [
+    {"type": "uart_rx", "role": "UART仅RX", "count": 1}
+  ]
+}

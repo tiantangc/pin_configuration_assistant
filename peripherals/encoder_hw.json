@@ -1,0 +1,9 @@
+{
+  "id": "encoder_hw",
+  "name": "硬件编码器",
+  "icon": "🌀",
+  "description": "定时器编码器模式（TIMx CH1+CH2），占用整个定时器",
+  "requests": [
+    {"type": "timer_enc", "role": "编码器", "count": 1}
+  ]
+}
