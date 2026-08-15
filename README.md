@@ -1,6 +1,6 @@
 # 单片机引脚配置辅助助手
 
-电赛电控专用：告诉它你用哪些外设，它给出 STM32F103C8T6 的最佳引脚分配方案。
+电赛电控专用：告诉它你用哪些外设，它给出 STM32F103C8T6 / MSPM0G3507 的最佳引脚分配方案。
 
 GitHub 仓库：https://github.com/tiantangc/pin_configuration_assistant
 
@@ -35,9 +35,10 @@ python cli.py --scenario "visual:1,stepper_motor:3" --top 5
 
 ### 1. 外设与引脚配置（网页版）
 
+- **芯片切换**：标题栏下拉选择 STM32F103C8T6 或 MSPM0G3507（天猛星板）
 - 动态增删外设行，每行带序号、数量、备注
 - 外设类型下拉可选（共 21 个模板）
-- 保留引脚动态增删，带备注（默认保留 PA13/PA14、PB2、PD0/PD1）
+- 保留引脚动态增删，带备注（默认保留调试口、板级特殊脚、晶振脚）
 - 设置页实时引脚预览图：锁定=橙、保留=红、空闲=浅灰，悬停看详情
 
 ### 2. 智能求解
@@ -46,6 +47,7 @@ python cli.py --scenario "visual:1,stepper_motor:3" --top 5
 - **每一行 = 一个频率组**：行内 PWM 共用一个定时器（同频），不同行独立调速
 - **I2C 共享组**：相同组名强制共用一条总线，不同组名强制分开
 - **SPI 总线**：共享 SCK/MISO/MOSI，每个从机独立 NSS（GPIO 软件片选）
+- **MSPM0 灵活复用**：UART/I2C/SPI/TIMER 信号跨引脚自由组合（区别于 F103 的 remap 组）
 - 板级特殊脚评分优化：优先避开板载 LED、USB、JTAG、32.768k 晶振脚
 - 无方案时输出具体原因（定时器/UART/I2C/SPI/CAN/ADC/EXTI/GPIO 哪种资源不足）
 
@@ -62,14 +64,16 @@ python cli.py --scenario "visual:1,stepper_motor:3" --top 5
 - 导出格式：**JSON**（可再次导入）/ **Markdown**（给人看）/ **CSV**（Excel 打开）
 - 导入方案 JSON 后所有引脚自动锁定，可继续加外设增量分配
 
-### 5. CubeMX 配置步骤
+### 5. 配置步骤生成
 
-- 每个方案内置「📋 CubeMX 配置步骤」：基础设置、引脚信号、外设模式、重映射提醒、最后检查
-- Markdown 导出中也包含该步骤
+- STM32F103C8Tx：生成「📋 CubeMX 配置步骤」（Pinout 选信号、外设模式、重映射提醒）
+- MSPM0G3507：生成「📋 SysConfig 配置步骤」（CCS 中 PinMux 选引脚功能、ADD 外设、PWM/QEI/ADC/中断）
+- Markdown 导出中也包含对应步骤
 
 ### 6. 引脚图可视化
 
-- **芯片引脚图**（LQFP48 封装）与**最小系统板引脚图**（2×20 排针）
+- **芯片引脚图**（F103 LQFP48 封装）
+- **板子排针图**：F103 最小系统板（2×20 排针）、MSPM0 天猛星板（4×20 排针）
 - 按外设类型着色，工程图式引线标注每个引脚用途
 - 支持查看大图、下载 SVG / PNG / JPG
 
@@ -88,9 +92,10 @@ python cli.py --scenario "visual:1,stepper_motor:3" --top 5
 ```
 pin_configuration_assistant/
 ├── chips/
-│   └── STM32F103C8Tx.json     # 芯片引脚/复用/封装数据库
+│   ├── STM32F103C8Tx.json     # F103 引脚/复用/封装数据库
+│   └── MSPM0G3507.json        # 天猛星板引脚/灵活复用/排针布局数据库
 ├── peripherals/               # 21 个外设模板（JSON）
-├── solver.py                  # 求解引擎（约束/评分/诊断）
+├── solver.py                  # 求解引擎（约束/评分/诊断，兼容两种芯片格式）
 ├── cli.py                     # 命令行入口
 ├── app.py                     # 网页版入口（NiceGUI）
 ├── requirements.txt
@@ -102,7 +107,6 @@ pin_configuration_assistant/
 
 ## 下一步计划
 
-- [ ] MSPM0G3507 天猛星开发板支持
 - [ ] 电赛场景模板一键套用（智能车/无人机/电源题）
 - [ ] 方案保存/命名/对比
 - [ ] 软件模拟建议（软件 I2C / 软件 PWM / GPIO 模拟编码器）
