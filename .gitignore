@@ -17,3 +17,6 @@ Thumbs.db
 
 # 本地配置
 .env
+
+# 本地 git 推送脚本（不上传到远程）
+git_push.bat
