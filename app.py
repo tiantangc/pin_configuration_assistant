@@ -1478,7 +1478,7 @@ def _saved_files() -> List[str]:
 def refresh_saved_options() -> None:
     files = _saved_files()
     opts = {fn: fn[:-5] for fn in files} if files else {"": "（暂无方案）"}
-    for sel in (load_select, compare_select_a, compare_select_b):
+    for sel in (load_select, compare_select_a, compare_select_b, delete_select):
         if sel is not None:
             sel.set_options(opts)
             if files and sel.value not in opts:
@@ -1654,6 +1654,32 @@ def compare_configs() -> None:
     compare_dialog.close()
 
 
+def open_delete_dialog() -> None:
+    refresh_saved_options()
+    if not _saved_files():
+        ui.notify("还没有保存过方案。", type="negative")
+        return
+    delete_dialog.open()
+
+
+def delete_config() -> None:
+    """删除选中的已存方案。"""
+    fn = delete_select.value
+    if not fn:
+        ui.notify("请选择要删除的方案。", type="negative")
+        return
+    path = os.path.join(SAVE_DIR, fn)
+    name = fn[:-5] if fn.endswith(".json") else fn
+    try:
+        os.remove(path)
+    except Exception as exc:
+        ui.notify(f"删除失败：{exc}", type="negative")
+        return
+    refresh_saved_options()
+    ui.notify(f"已删除方案：{name}", type="positive")
+    delete_dialog.close()
+
+
 def on_solve() -> None:
     global current_solutions, current_spec
     spec = build_spec()
@@ -1753,6 +1779,7 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
             ui.button("💾 保存配置", on_click=lambda: save_dialog.open()).props("flat color=teal")
             ui.button("📂 加载配置", on_click=open_load_dialog).props("flat color=purple")
             ui.button("🆚 对比配置", on_click=open_compare_dialog).props("flat color=brown")
+            ui.button("🗑️ 删除配置", on_click=open_delete_dialog).props("flat color=red")
             ui.upload(on_upload=handle_import, auto_upload=True,
                       label="📥 导入方案 JSON").props("flat color=orange")
         ui.markdown(
@@ -1826,6 +1853,14 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
         with ui.row().classes("gap-2 mt-2"):
             ui.button("对比", on_click=compare_configs).props("color=brown")
             ui.button("取消", on_click=lambda: compare_dialog.close()).props("flat")
+
+    # 删除配置对话框
+    with ui.dialog() as delete_dialog, ui.card().classes("w-96"):
+        ui.label("删除已存方案").classes("font-bold")
+        delete_select = ui.select({"": "（暂无方案）"}, value="").classes("w-full")
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("删除", on_click=delete_config).props("color=red")
+            ui.button("取消", on_click=lambda: delete_dialog.close()).props("flat")
 
     # 引脚图大图对话框
     with ui.dialog() as pinout_dialog, ui.card().classes("w-full max-w-7xl"):
