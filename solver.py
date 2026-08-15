@@ -113,6 +113,7 @@ class Chip:
         self.default_reserved: set = set(data.get("reserved_pins_by_default", []))
         self.penalty_pins: Dict[str, str] = data.get("penalty_pins", {})
         self.board_penalty_pins: Dict[str, str] = data.get("board_penalty_pins", {})
+        self._cand_cache: Dict[str, Any] = {}
 
     # ----- 基础候选 -----
 
@@ -134,6 +135,8 @@ class Chip:
     # ----- 外设候选生成（返回列表，每个元素为一个候选 dict） -----
 
     def uart_candidates(self) -> List[Dict[str, Any]]:
+        if "uart" in self._cand_cache:
+            return self._cand_cache["uart"]
         out = []
         for uart_id, groups in self.groups.get("UART", {}).items():
             if isinstance(groups, list):
@@ -164,6 +167,8 @@ class Chip:
         return out
 
     def i2c_candidates(self) -> List[Dict[str, Any]]:
+        if "i2c" in self._cand_cache:
+            return self._cand_cache["i2c"]
         out = []
         for i2c_id, groups in self.groups.get("I2C", {}).items():
             if isinstance(groups, list):
@@ -191,6 +196,8 @@ class Chip:
         return out
 
     def spi_candidates(self) -> List[Dict[str, Any]]:
+        if "spi" in self._cand_cache:
+            return self._cand_cache["spi"]
         out = []
         for spi_id, groups in self.groups.get("SPI", {}).items():
             if isinstance(groups, list):
@@ -312,6 +319,8 @@ class Chip:
         return out
 
     def timer_enc_candidates(self) -> List[Dict[str, Any]]:
+        if "timer_enc" in self._cand_cache:
+            return self._cand_cache["timer_enc"]
         out = []
         for timer_id, groups in self.groups.get("TIMER", {}).items():
             if isinstance(groups, list):
@@ -344,10 +353,14 @@ class Chip:
                             "roles": ["编码器A(C0)", "编码器B(C1)"],
                             "channels": ["C0", "C1"],
                         })
+        self._cand_cache["timer_enc"] = out
         return out
 
     def timer_pwm_candidates(self, count: int) -> List[Dict[str, Any]]:
         """选一个定时器，取 count 个通道；兼容 F103 绑定组与 MSPM0 灵活格式。"""
+        key = f"timer_pwm_{count}"
+        if key in self._cand_cache:
+            return self._cand_cache[key]
         out = []
         for timer_id, groups in self.groups.get("TIMER", {}).items():
             if isinstance(groups, list):
@@ -374,7 +387,7 @@ class Chip:
                 if len(ch_names) < count:
                     continue
                 for combo in combinations(ch_names, count):
-                    pin_lists = [ch[n][:5] for n in combo]
+                    pin_lists = [ch[n][:4] for n in combo]
                     for pins in product(*pin_lists):
                         if len(set(pins)) != len(pins):
                             continue
@@ -386,7 +399,43 @@ class Chip:
                             "roles": list(combo),
                             "channels": list(combo),
                         })
+        self._cand_cache[key] = out
         return out
+
+    def board_positions(self) -> Dict[str, Tuple[int, int]]:
+        """构建引脚名 -> (列, 行) 的板子位置表。"""
+        if "board_pos" in self._cand_cache:
+            return self._cand_cache["board_pos"]
+        pos: Dict[str, Tuple[int, int]] = {}
+        layout = self.data.get("board_layout") or {}
+        cols = layout.get("columns") or []
+        norm = layout.get("norm") or {}
+        for ci, col in enumerate(cols):
+            for ri, raw in enumerate(col):
+                pin = norm.get(raw, raw)
+                pos[pin] = (ci, ri)
+        self._cand_cache["board_pos"] = pos
+        return pos
+
+    def pins_close(self, pin_a: str, pin_b: str) -> bool:
+        """判断两个引脚在板子上是否物理靠近。
+
+        - 两排布局（F103 最小系统板）：同一排且相邻。
+        - 四列布局（MSPM0 天猛星）：同列相邻；或相邻近列（列1-2、列3-4）且行差≤1。
+        """
+        pos = self.board_positions()
+        if pin_a not in pos or pin_b not in pos:
+            return False
+        ca, ra = pos[pin_a]
+        cb, rb = pos[pin_b]
+        ncols = len((self.data.get("board_layout") or {}).get("columns") or [])
+        if ncols >= 4:
+            if ca == cb:
+                return abs(ra - rb) == 1
+            near_cols = (abs(ca - cb) == 1) and ({ca, cb} in ({0, 1}, {2, 3}))
+            return near_cols and abs(ra - rb) <= 1
+        # 两排布局
+        return ca == cb and abs(ra - rb) == 1
 
 
 # ---------------------------------------------------------------- 求解器状态
@@ -449,7 +498,7 @@ class State:
 
 class Solver:
     def __init__(self, chip: Chip, reserved: Optional[List[str]] = None,
-                 max_solutions: int = 60, max_steps: int = 120000,
+                 max_solutions: int = 60, max_steps: int = 30000,
                  include_default_reserved: bool = True):
         self.chip = chip
         if include_default_reserved:
@@ -893,6 +942,15 @@ class Solver:
                 score += 5 * a.req.count  # 多路 PWM 同定时器成组
             if a.req.kind == "timer_enc":
                 score += 3
+            # 成对/成组外设：引脚在板子上物理靠近加分（如 UART TX/RX、I2C SCL/SDA）
+            if a.req.kind in ("uart", "i2c", "spi", "spi_bus", "can", "timer_enc", "exti_gpio") and len(a.pins) >= 2:
+                close_pairs = 0
+                for i in range(len(a.pins) - 1):
+                    if self.chip.pins_close(a.pins[i], a.pins[i + 1]):
+                        close_pairs += 1
+                if close_pairs:
+                    score += 6 * close_pairs
+                    notes.append(f"{a.req.periph_name} {a.req.role} 引脚相邻 ×{close_pairs}，布线方便")
             for p in a.pins:
                 if p in self.chip.board_penalty_pins:
                     score -= 6

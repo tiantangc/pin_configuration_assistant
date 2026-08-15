@@ -113,10 +113,19 @@
   },
   "board_layout": {
     "columns": [
-      ["VBAT", "PC13", "PC14", "PC15", "PD0", "PD1", "NRST", "VSSA", "VDDA", "PA0", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7", "PB0", "PB1", "PB2", "PB10", "PB11", "VSS", "VDD"],
-      ["PB12", "PB13", "PB14", "PB15", "PA8", "PA9", "PA10", "PA11", "PA12", "PA13", "VSS", "VDD", "PA14", "PA15", "PB3", "PB4", "PB5", "PB6", "PB7", "BOOT0", "PB8", "PB9", "VSS", "VDD"]
+      ["G", "G", "3.3V", "RST", "B11", "B10", "B1", "B0", "A7", "A6", "A5", "A4", "A3", "A2", "A1", "A0", "C15", "C14", "C13", "VB"],
+      ["B12", "B13", "B14", "B15", "A8", "A9", "A10", "A11", "A12", "A15", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "5V", "G", "3.3V"]
     ],
-    "norm": {}
+    "norm": {
+      "A0": "PA0", "A1": "PA1", "A2": "PA2", "A3": "PA3", "A4": "PA4", "A5": "PA5",
+      "A6": "PA6", "A7": "PA7", "A8": "PA8", "A9": "PA9", "A10": "PA10", "A11": "PA11",
+      "A12": "PA12", "A15": "PA15",
+      "B0": "PB0", "B1": "PB1", "B3": "PB3", "B4": "PB4", "B5": "PB5", "B6": "PB6",
+      "B7": "PB7", "B8": "PB8", "B9": "PB9", "B10": "PB10", "B11": "PB11", "B12": "PB12",
+      "B13": "PB13", "B14": "PB14", "B15": "PB15",
+      "C13": "PC13", "C14": "PC14", "C15": "PC15",
+      "VB": "VBAT", "RST": "NRST", "G": "G", "3.3V": "3.3V", "5V": "5V"
+    }
   },
   "reserved_pins_by_default": ["PA13", "PA14", "PB2", "PD0", "PD1"],
   "penalty_pins": {

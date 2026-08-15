@@ -93,6 +93,15 @@ pinout_dl_dialog = None
 pinout_dl_name_input = None
 pinout_dl_fmt_select = None
 pending_pinout_svg = ""
+save_dialog = None
+save_name_input = None
+load_dialog = None
+load_select = None
+compare_dialog = None
+compare_select_a = None
+compare_select_b = None
+
+SAVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_solutions")
 
 # 引脚下拉选项：引脚名 + 默认功能备注（随当前芯片动态生成）
 def get_pin_options() -> Dict[str, str]:
@@ -1455,6 +1464,196 @@ def load_default_reserve() -> None:
     refresh_preview()
 
 
+def _safe_filename(name: str) -> str:
+    """把方案名转成安全文件名。"""
+    return re.sub(r'[\\/:*?"<>|]', "_", name).strip() or "未命名"
+
+
+def _saved_files() -> List[str]:
+    if not os.path.isdir(SAVE_DIR):
+        return []
+    return sorted(fn for fn in os.listdir(SAVE_DIR) if fn.endswith(".json"))
+
+
+def refresh_saved_options() -> None:
+    files = _saved_files()
+    opts = {fn: fn[:-5] for fn in files} if files else {"": "（暂无方案）"}
+    for sel in (load_select, compare_select_a, compare_select_b):
+        if sel is not None:
+            sel.set_options(opts)
+            if files and sel.value not in opts:
+                sel.value = files[0]
+            if not files:
+                sel.value = ""
+
+
+def save_config() -> None:
+    """保存当前配置为命名方案。"""
+    name = (save_name_input.value or "").strip()
+    if not name:
+        ui.notify("请输入方案名称。", type="negative")
+        return
+    spec = build_spec()
+    if not spec:
+        ui.notify("请先添加外设再保存。", type="negative")
+        return
+    rows_data = []
+    for pid, cnt, bg, lock_text, remark in spec:
+        rows_data.append({
+            "periph": pid,
+            "count": cnt,
+            "bus_group": bg,
+            "lock_text": lock_text,
+            "remark": remark,
+        })
+    reserved_data = [{"pin": r["select"].value, "remark": (r["remark_input"].value or "").strip()}
+                     for r in reserve_rows if r["select"].value]
+    data = {
+        "app": "pin_configuration_assistant",
+        "version": 1,
+        "chip": chip.id,
+        "name": name,
+        "saved_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "rows": rows_data,
+        "reserved": reserved_data,
+    }
+    os.makedirs(SAVE_DIR, exist_ok=True)
+    path = os.path.join(SAVE_DIR, _safe_filename(name) + ".json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    refresh_saved_options()
+    ui.notify(f"已保存方案：{name}", type="positive")
+    save_dialog.close()
+
+
+def open_load_dialog() -> None:
+    refresh_saved_options()
+    if not _saved_files():
+        ui.notify("还没有保存过方案。", type="negative")
+        return
+    load_dialog.open()
+
+
+def load_config() -> None:
+    """加载选中的已存方案。"""
+    fn = load_select.value
+    if not fn:
+        ui.notify("请选择要加载的方案。", type="negative")
+        return
+    path = os.path.join(SAVE_DIR, fn)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as exc:
+        ui.notify(f"读取失败：{exc}", type="negative")
+        return
+
+    # 芯片不一致时先切换
+    if data.get("chip") and data["chip"] != chip.id:
+        chip_select.value = data["chip"]  # 触发 on_chip_change
+
+    clear_all_rows()
+    for r in data.get("rows", []):
+        add_row(r.get("periph"), int(r.get("count", 1)),
+                r.get("bus_group") or "auto",
+                r.get("lock_text") or "",
+                r.get("remark") or "")
+    clear_all_reserve_rows()
+    for item in data.get("reserved", []):
+        if isinstance(item, dict):
+            add_reserve_row(item.get("pin"), item.get("remark") or "")
+        else:
+            add_reserve_row(item, "")
+    refresh_preview()
+    ui.notify(f"已加载方案：{data.get('name', fn)}", type="positive")
+    load_dialog.close()
+
+
+def open_compare_dialog() -> None:
+    refresh_saved_options()
+    files = _saved_files()
+    if len(files) < 2:
+        ui.notify("至少保存两个方案才能对比。", type="negative")
+        return
+    compare_dialog.open()
+
+
+def compare_configs() -> None:
+    """对比两个已存方案，结果写入结果区。"""
+    fa, fb = compare_select_a.value, compare_select_b.value
+    if not fa or not fb:
+        ui.notify("请选择两个方案。", type="negative")
+        return
+    if fa == fb:
+        ui.notify("请选择两个不同的方案。", type="negative")
+        return
+
+    def load(fn):
+        with open(os.path.join(SAVE_DIR, fn), "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    a, b = load(fa), load(fb)
+    name_a, name_b = a.get("name", fa), b.get("name", fb)
+
+    def row_key(r):
+        return (r.get("periph"), int(r.get("count", 1)), r.get("bus_group"),
+                r.get("lock_text") or "", r.get("remark") or "")
+
+    rows_a = {row_key(r): r for r in a.get("rows", [])}
+    rows_b = {row_key(r): r for r in b.get("rows", [])}
+    keys_a, keys_b = set(rows_a), set(rows_b)
+    only_a = sorted(keys_a - keys_b)
+    only_b = sorted(keys_b - keys_a)
+    same = sorted(keys_a & keys_b)
+
+    def fmt_row(r):
+        parts = [f"{r.get('periph')} ×{int(r.get('count', 1))}"]
+        if r.get("remark"):
+            parts.append(f"备注[{r['remark']}]")
+        if r.get("lock_text"):
+            parts.append(f"锁定[{r['lock_text']}]")
+        if r.get("bus_group"):
+            parts.append(f"共享组[{r['bus_group']}]")
+        return "，".join(parts)
+
+    reserved_a = {x.get("pin") if isinstance(x, dict) else x: (x.get("remark") if isinstance(x, dict) else "")
+                  for x in a.get("reserved", [])}
+    reserved_b = {x.get("pin") if isinstance(x, dict) else x: (x.get("remark") if isinstance(x, dict) else "")
+                  for x in b.get("reserved", [])}
+    ro_a = sorted(set(reserved_a) - set(reserved_b))
+    ro_b = sorted(set(reserved_b) - set(reserved_a))
+
+    lines = [f'<h3 style="margin:0 0 8px">🆚 配置对比：{name_a} vs {name_b}</h3>']
+    lines.append("<h4>相同外设</h4><ul>")
+    for k in same:
+        lines.append(f"<li>{html_mod.escape(fmt_row(rows_a[k]))}</li>")
+    lines.append("</ul>")
+    lines.append(f"<h4>仅在「{name_a}」中</h4><ul>")
+    for k in only_a:
+        lines.append(f"<li>{html_mod.escape(fmt_row(rows_a[k]))}</li>")
+    if not only_a:
+        lines.append("<li>无</li>")
+    lines.append("</ul>")
+    lines.append(f"<h4>仅在「{name_b}」中</h4><ul>")
+    for k in only_b:
+        lines.append(f"<li>{html_mod.escape(fmt_row(rows_b[k]))}</li>")
+    if not only_b:
+        lines.append("<li>无</li>")
+    lines.append("</ul>")
+    lines.append("<h4>保留引脚差异</h4><ul>")
+    for p in ro_a:
+        lines.append(f"<li>{p}：仅「{name_a}」保留（{reserved_a[p] or '无备注'}）</li>")
+    for p in ro_b:
+        lines.append(f"<li>{p}：仅「{name_b}」保留（{reserved_b[p] or '无备注'}）</li>")
+    if not ro_a and not ro_b:
+        lines.append("<li>无差异</li>")
+    lines.append("</ul>")
+    result_html.set_content("".join(lines))
+    result_cards.clear()
+    ui.notify("对比完成，结果已显示在下方。", type="positive")
+    compare_dialog.close()
+
+
 def on_solve() -> None:
     global current_solutions, current_spec
     spec = build_spec()
@@ -1551,6 +1750,9 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
             ui.button("➕ 添加外设", on_click=lambda: add_row()).props("flat color=blue")
             ui.button("载入示例场景", on_click=load_default_scenario).props("flat color=green")
             ui.button("清空", on_click=clear_all_rows).props("flat color=grey")
+            ui.button("💾 保存配置", on_click=lambda: save_dialog.open()).props("flat color=teal")
+            ui.button("📂 加载配置", on_click=open_load_dialog).props("flat color=purple")
+            ui.button("🆚 对比配置", on_click=open_compare_dialog).props("flat color=brown")
             ui.upload(on_upload=handle_import, auto_upload=True,
                       label="📥 导入方案 JSON").props("flat color=orange")
         ui.markdown(
@@ -1600,6 +1802,31 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
             ui.button("确认下载", on_click=do_export).props("color=blue")
             ui.button("取消", on_click=lambda: export_dialog.close()).props("flat")
 
+    # 保存配置对话框
+    with ui.dialog() as save_dialog, ui.card().classes("w-96"):
+        ui.label("保存当前配置").classes("font-bold")
+        save_name_input = ui.input("方案名称", value="", placeholder="如 智能车底盘").classes("w-full")
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("保存", on_click=save_config).props("color=teal")
+            ui.button("取消", on_click=lambda: save_dialog.close()).props("flat")
+
+    # 加载配置对话框
+    with ui.dialog() as load_dialog, ui.card().classes("w-96"):
+        ui.label("加载已存方案").classes("font-bold")
+        load_select = ui.select({"": "（暂无方案）"}, value="").classes("w-full")
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("加载", on_click=load_config).props("color=purple")
+            ui.button("取消", on_click=lambda: load_dialog.close()).props("flat")
+
+    # 对比配置对话框
+    with ui.dialog() as compare_dialog, ui.card().classes("w-96"):
+        ui.label("对比两个已存方案").classes("font-bold")
+        compare_select_a = ui.select({"": "（暂无方案）"}, value="", label="方案 A").classes("w-full")
+        compare_select_b = ui.select({"": "（暂无方案）"}, value="", label="方案 B").classes("w-full")
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("对比", on_click=compare_configs).props("color=brown")
+            ui.button("取消", on_click=lambda: compare_dialog.close()).props("flat")
+
     # 引脚图大图对话框
     with ui.dialog() as pinout_dialog, ui.card().classes("w-full max-w-7xl"):
         pinout_dialog_html = ui.html("").classes("w-full")
@@ -1618,6 +1845,7 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
     # 页面打开时默认载入你的痛点场景和默认保留引脚
     load_default_scenario()
     load_default_reserve()
+    refresh_saved_options()
 
 
 ui.run(host="127.0.0.1", port=8080, reload=False)
