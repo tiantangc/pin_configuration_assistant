@@ -58,6 +58,7 @@ class Request:
     bus_group: Optional[str] = None   # I2C 共享组：相同组名强制共用一条总线
     row_id: Optional[str] = None      # 页面行标识（用于锁定引脚按行匹配）
     locked_pins: Optional[List[str]] = None  # 锁定引脚：与该请求候选 pins 等长
+    remark: Optional[str] = None      # 行备注（如串口备注成"蓝牙"）
     optional: bool = False
     sub_labels: Optional[List[str]] = None   # 合并请求中，每个通道/引脚对应的实例名
 
@@ -81,9 +82,11 @@ class Assignment:
     shared: bool = False          # 是否共享了总线（如多个 I2C 从机共用）
 
     def pin_pairs(self) -> List[Tuple[str, str, str]]:
-        """返回 [(显示名, 引脚, 角色), ...]"""
+        """返回 [(显示名, 引脚, 角色), ...]，显示名带行备注。"""
         labels = self.req.sub_labels if (self.req.sub_labels and len(self.req.sub_labels) == len(self.pins)) \
             else [f"{self.req.periph_name} {r}" for r in self.roles]
+        if self.req.remark:
+            labels = [f"{l}[{self.req.remark}]" for l in labels]
         return list(zip(labels, self.pins, self.roles))
 
 
@@ -1040,6 +1043,7 @@ def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
         if bus_group == "auto":
             bus_group = None
         lock_text = item[3] if len(item) > 3 else None
+        remark = item[4] if len(item) > 4 else None
         if num <= 0:
             continue
         template = load_peripheral(pid)
@@ -1060,6 +1064,7 @@ def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
                 row_reqs.append(Request(
                     kind="timer_pwm_exclusive", periph_name=base_name, role=role,
                     count=num * count, share_group=row_group, row_id=row_group,
+                    remark=remark,
                     optional=False, sub_labels=list(unit_names) * count))
             elif kind in ("i2c", "spi_bus"):
                 # 总线型：一行 = 一条总线，数量 = 挂在这条总线上的设备数
@@ -1067,6 +1072,7 @@ def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
                 row_reqs.append(Request(
                     kind=kind, periph_name=disp_name, role=role, count=1,
                     share_group=row_group, row_id=row_group,
+                    remark=remark,
                     bus_group=bus_group if kind == "i2c" else None, optional=False))
             else:
                 # 其他（GPIO/UART/ADC/EXTI/CAN 等）按每个实例逐个生成
@@ -1074,7 +1080,7 @@ def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
                     row_reqs.append(Request(
                         kind=kind, periph_name=unit_name, role=role, count=count,
                         share_group=r.get("share_group"), row_id=row_group,
-                        optional=optional))
+                        remark=remark, optional=optional))
 
         # 应用锁定（在 PWM 拆分前，锁定只支持一行 ≤4 个 PWM 通道）
         _apply_locks_to_row(row_reqs, lock_tokens)
@@ -1092,7 +1098,8 @@ def build_requests_from_spec(spec: List[Tuple[str, int]]) -> List[Request]:
                     plain.append(Request(kind="timer_pwm_exclusive",
                                          periph_name=req.periph_name, role=req.role,
                                          count=len(chunk), share_group=req.share_group,
-                                         row_id=req.row_id, sub_labels=list(chunk)))
+                                         row_id=req.row_id, remark=req.remark,
+                                         sub_labels=list(chunk)))
             else:
                 plain.append(req)
     return plain

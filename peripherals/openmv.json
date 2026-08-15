@@ -1,8 +1,8 @@
 {
   "id": "openmv",
-  "name": "OpenMV",
+  "name": "视觉模块",
   "icon": "📷",
-  "description": "OpenMV 视觉模块，通过串口与主控通信",
+  "description": "视觉模块（OpenMV/星瞳/K210 等），通过串口与主控通信",
   "requests": [
     {"type": "uart", "role": "串口", "count": 1}
   ]

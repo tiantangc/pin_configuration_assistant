@@ -75,6 +75,8 @@ export_dialog = None
 export_name_input = None
 export_format_select = None
 pending_export_idx = 0
+pinout_dialog = None
+pinout_dialog_html = None
 
 # 引脚下拉选项：引脚名 + 默认功能备注
 pin_options = {}
@@ -107,12 +109,13 @@ def build_spec() -> List[Tuple]:
             else:
                 bg = None
             lock_text = (r.get("lock_text") or "").strip()
-            spec.append((pid, cnt, bg, lock_text))
+            remark = (r["remark_input"].value or "").strip()
+            spec.append((pid, cnt, bg, lock_text, remark))
     return spec
 
 
 def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
-            lock_text: str = "") -> None:
+            lock_text: str = "", remark: str = "") -> None:
     """在页面上添加一行外设选择。I2C 类外设会额外显示共享组选择。"""
     if pid is None:
         pid = all_periphs[0]["id"]
@@ -124,13 +127,15 @@ def add_row(pid: str = None, count: int = 1, bus_group: str = "auto",
             share_sel.set_visibility(pid in I2C_PERIPH_IDS)
             sel.on_value_change(lambda e: share_sel.set_visibility(e.value in I2C_PERIPH_IDS))
             cnt = ui.number("数量", value=count, min=0, max=16, format="%.0f").classes("w-24")
+            remark_input = ui.input("备注", value=remark, placeholder="如 蓝牙").classes("w-36")
             lock_btn = ui.button("🔓 未锁定", on_click=None).props("flat color=blue")
             delete_btn = ui.button("✖").props("flat dense color=red")
         # 锁定设置对话框
         with ui.dialog() as lock_dialog, ui.card().classes("w-96"):
             lock_panel = ui.column().classes("w-full gap-2")
     row_data = {"row": row, "select": sel, "share_sel": share_sel,
-                "count": cnt, "lock_btn": lock_btn, "delete_btn": delete_btn,
+                "count": cnt, "remark_input": remark_input,
+                "lock_btn": lock_btn, "delete_btn": delete_btn,
                 "num_label": num_label,
                 "lock_dialog": lock_dialog, "lock_panel": lock_panel,
                 "lock_text": lock_text}
@@ -331,6 +336,7 @@ def solution_to_export_rows(spec: List[Tuple], sol) -> List[Dict[str, Any]]:
             "count": cnt,
             "bus_group": bg,
             "lock_text": ",".join(tokens),
+            "remark": item[4] if len(item) > 4 else "",
         })
     return rows_out
 
@@ -367,7 +373,8 @@ def _resource_summary(chip: Chip, sol) -> List[str]:
     ]
 
 
-def solution_to_markdown(chip: Chip, sol, idx: int) -> str:
+def solution_to_markdown(chip: Chip, sol, idx: int,
+                         reserved_remarks: Dict[str, str] = None) -> str:
     """生成人类可读的 Markdown 引脚表。"""
     lines = [
         f"# 引脚配置方案 {idx}（得分 {sol.score}）",
@@ -384,6 +391,13 @@ def solution_to_markdown(chip: Chip, sol, idx: int) -> str:
     for s in _resource_summary(chip, sol):
         lines.append(f"- {s}")
     lines.append("")
+    lines.append("## 保留引脚")
+    if reserved_remarks:
+        for p, r in sorted(reserved_remarks.items()):
+            lines.append(f"- {p}" + (f"（{r}）" if r else ""))
+    else:
+        lines.append("- 无")
+    lines.append("")
     lines.append("## 说明")
     if sol.notes:
         for n in sol.notes:
@@ -398,8 +412,9 @@ def solution_to_markdown(chip: Chip, sol, idx: int) -> str:
     return "\n".join(lines)
 
 
-def solution_to_csv(chip: Chip, sol, idx: int) -> str:
-    """生成 CSV 引脚表（Excel/WPS 打开），末尾带资源占用和说明。"""
+def solution_to_csv(chip: Chip, sol, idx: int,
+                    reserved_remarks: Dict[str, str] = None) -> str:
+    """生成 CSV 引脚表（Excel/WPS 打开），末尾带资源占用、保留引脚和说明。"""
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(["方案", "得分", "外设/角色", "资源", "引脚", "角色", "备注"])
@@ -411,6 +426,13 @@ def solution_to_csv(chip: Chip, sol, idx: int) -> str:
     writer.writerow(["资源占用"])
     for s in _resource_summary(chip, sol):
         writer.writerow([s])
+    writer.writerow([])
+    writer.writerow(["保留引脚", "备注"])
+    if reserved_remarks:
+        for p, r in sorted(reserved_remarks.items()):
+            writer.writerow([p, r])
+    else:
+        writer.writerow(["无", ""])
     writer.writerow([])
     writer.writerow(["说明"])
     if sol.notes:
@@ -577,6 +599,45 @@ def _norm_board_pin(pin: str) -> str:
     return pin
 
 
+# 外设名简化，用于引脚图引出标注（保持短小）
+SHORT_NAMES = {
+    "I2C屏幕": "屏", "MPU6050": "MPU", "OpenMV": "OpenMV", "视觉模块": "视觉",
+    "步进电机": "步", "小车电机": "车", "硬件编码器": "编码器",
+    "GPIO模拟编码器": "GPIO编码", "GPIO输出": "GPIO出", "GPIO输入": "GPIO入",
+    "UART串口": "UART", "UART仅TX": "UART_TX", "UART仅RX": "UART_RX",
+    "I2C总线": "I2C", "SPI总线": "SPI", "SPI屏幕": "SPI屏",
+    "ADC输入": "ADC", "EXTI中断输入": "EXTI", "CAN总线": "CAN",
+    "PWM输出": "PWM", "舵机": "舵机", "DBUS遥控器": "DBUS",
+}
+
+
+def _short_disp(disp: str) -> str:
+    """把显示名缩短用于标注：步进电机#1 -> 步#1。"""
+    base = disp.split("#")[0]
+    short = SHORT_NAMES.get(base, base[:4])
+    if "#" in disp:
+        short += "#" + disp.split("#", 1)[1]
+    return short
+
+
+def _collect_callouts(sol) -> Dict[str, List[str]]:
+    """收集每个引脚的具体用途标注：{pin: [标注文本]}。"""
+    callouts: Dict[str, List[str]] = {}
+    for a in sol.assignments:
+        labels = (a.req.sub_labels
+                  if (a.req.sub_labels and len(a.req.sub_labels) == len(a.pins))
+                  else [a.req.periph_name] * len(a.pins))
+        for i, pin in enumerate(a.pins):
+            role = a.roles[i] if i < len(a.roles) else ""
+            base = labels[i] if i < len(labels) else a.req.periph_name
+            name = a.req.remark if a.req.remark else _short_disp(base)
+            label = f"{name} {role}" if role else name
+            callouts.setdefault(pin, [])
+            if label not in callouts[pin]:
+                callouts[pin].append(label)
+    return callouts
+
+
 def _pin_colors(sol) -> Dict[str, str]:
     colors: Dict[str, str] = {}
     for a in sol.assignments:
@@ -613,72 +674,158 @@ def _legend_svg(x: float, y: float) -> str:
     return "".join(parts)
 
 
-def chip_pinout_svg(chip: Chip, sol, reserved: set) -> str:
-    """LQFP48 芯片封装引脚图。"""
+def chip_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> str:
+    """LQFP48 芯片封装引脚图，带工程图式引出标注。"""
     pin_nums = chip.data.get("package_pin_numbers", {})
     sol_colors = _pin_colors(sol)
-    parts = ['<svg viewBox="0 0 640 680" xmlns="http://www.w3.org/2000/svg" '
-             'style="width:100%;max-width:640px;height:auto">']
-    parts.append('<rect width="640" height="680" fill="white"/>')
+    callouts = _collect_callouts(sol)
+    parts = ['<svg viewBox="0 0 720 720" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:720px;height:auto">']
+    parts.append('<rect width="720" height="720" fill="white"/>')
     parts.append('<rect x="110" y="110" width="420" height="420" rx="10" fill="#f3f4f6" stroke="#9ca3af"/>')
     parts.append('<text x="320" y="300" text-anchor="middle" font-size="14" fill="#374151">STM32F103C8T6</text>')
     parts.append('<text x="320" y="320" text-anchor="middle" font-size="12" fill="#6b7280">LQFP48</text>')
     parts.append('<circle cx="110" cy="110" r="4" fill="#374151"/>')
 
+    top_calls, right_calls, bottom_calls, left_calls = [], [], [], []
+
     def pin(n: int, x: float, y: float, w: float, h: float,
-            tx: float, ty: float, anchor: str):
+            tx: float, ty: float, anchor: str, cx: float, cy: float):
         name = pin_nums.get(str(n), "?")
         color = _pin_color(name, sol_colors, reserved, chip)
         parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{color}" '
                      f'stroke="#374151" stroke-width="0.5"/>')
         parts.append(f'<text x="{tx}" y="{ty}" text-anchor="{anchor}" font-size="8" '
                      f'fill="#111827">{name}</text>')
+        label = None
+        if name in callouts:
+            label = "、".join(callouts[name])
+        elif reserved_remarks and name in reserved_remarks and reserved_remarks[name]:
+            label = "保留·" + reserved_remarks[name]
+        if label:
+            if anchor == "middle" and y < 110:      # 顶边
+                top_calls.append((cx, label))
+            elif anchor == "start":                  # 右边
+                right_calls.append((cy, label))
+            elif anchor == "middle" and y > 530:    # 底边
+                bottom_calls.append((cx, label))
+            else:                                    # 左边
+                left_calls.append((cy, label))
 
     for i in range(12):  # 顶边 1-12
-        pin(i + 1, 130 + i * 34, 78, 16, 32, 138 + i * 34, 74, "middle")
+        x = 130 + i * 34
+        pin(i + 1, x, 78, 16, 32, x + 8, 74, "middle", x + 8, 78)
     for i in range(12):  # 右边 13-24
-        pin(i + 13, 540, 130 + i * 34, 32, 16, 576, 141 + i * 34, "start")
+        y = 130 + i * 34
+        pin(i + 13, 540, y, 32, 16, 576, y + 11, "start", 540, y + 8)
     for i in range(12):  # 底边 25-36（右到左）
-        pin(i + 25, 526 - i * 34, 540, 16, 32, 534 - i * 34, 586, "middle")
+        x = 526 - i * 34
+        pin(i + 25, x, 540, 16, 32, x + 8, 586, "middle", x + 8, 572)
     for i in range(12):  # 左边 37-48（下到上）
-        pin(i + 37, 78, 526 - i * 34, 32, 16, 74, 537 - i * 34, "end")
+        y = 526 - i * 34
+        pin(i + 37, 78, y, 32, 16, 74, y + 11, "end", 78, y + 8)
 
-    parts.append(_legend_svg(40, 640))
+    # 引出标注
+    for j, (cx, label) in enumerate(top_calls):
+        yt = 48 if j % 2 == 0 else 30
+        parts.append(f'<polyline points="{cx},78 {cx},{yt + 7} {cx + 6},{yt + 7}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 8}" y="{yt + 15}" font-size="8" fill="#111827">{label}</text>')
+    for j, (cy, label) in enumerate(right_calls):
+        xt = 592 if j % 2 == 0 else 574
+        parts.append(f'<polyline points="540,{cy} {xt + 6},{cy} {xt + 6},{cy + 8}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{xt + 8}" y="{cy + 15}" font-size="8" fill="#111827">{label}</text>')
+    for j, (cx, label) in enumerate(bottom_calls):
+        yt = 600 if j % 2 == 0 else 620
+        parts.append(f'<polyline points="{cx},572 {cx},{yt + 7} {cx + 6},{yt + 7}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 8}" y="{yt + 15}" font-size="8" fill="#111827">{label}</text>')
+    for j, (cy, label) in enumerate(left_calls):
+        xt = 64 if j % 2 == 0 else 46
+        parts.append(f'<polyline points="78,{cy} {xt - 6},{cy} {xt - 6},{cy + 8}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{xt - 8}" y="{cy + 15}" font-size="8" fill="#111827" '
+                     f'text-anchor="end">{label}</text>')
+
+    parts.append(_legend_svg(30, 668))
+    if reserved_remarks:
+        text = "保留: " + ", ".join(f"{p}({r})" if r else p
+                                    for p, r in sorted(reserved_remarks.items()))
+        parts.append(f'<text x="30" y="692" font-size="8" fill="#374151">{text}</text>')
     parts.append('</svg>')
     return "".join(parts)
 
 
-def board_pinout_svg(chip: Chip, sol, reserved: set) -> str:
-    """你的 C8T6 最小系统板：2×20 排针（调试排针在右），按丝印横排绘制。"""
+def board_pinout_svg(chip: Chip, sol, reserved: set, reserved_remarks=None) -> str:
+    """你的 C8T6 最小系统板：2×20 排针（调试排针在右），按丝印横排绘制，带引出标注。"""
     sol_colors = _pin_colors(sol)
-    parts = ['<svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" '
-             'style="width:100%;max-width:400px;height:auto">']
-    parts.append('<rect width="400" height="280" fill="white"/>')
-    parts.append('<rect x="12" y="55" width="376" height="155" rx="6" fill="#d1d5db" stroke="#9ca3af"/>')
-    parts.append('<text x="200" y="70" text-anchor="middle" font-size="10" fill="#374151">'
+    callouts = _collect_callouts(sol)
+    parts = ['<svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg" '
+             'style="width:100%;max-width:800px;height:auto">']
+    parts.append('<rect width="800" height="460" fill="white"/>')
+    parts.append('<rect x="20" y="60" width="760" height="210" rx="8" fill="#d1d5db" stroke="#9ca3af"/>')
+    parts.append('<text x="400" y="80" text-anchor="middle" font-size="14" fill="#374151">'
                  'C8T6 最小系统板（调试排针在右）</text>')
 
     def row(pins, y):
+        calls = []
         for i, pin in enumerate(pins):
-            x = 20 + i * 18
-            color = _pin_color(_norm_board_pin(pin), sol_colors, reserved, chip)
-            parts.append(f'<rect x="{x}" y="{y}" width="16" height="40" fill="{color}" '
+            x = 35 + i * 37
+            std = _norm_board_pin(pin)
+            color = _pin_color(std, sol_colors, reserved, chip)
+            parts.append(f'<rect x="{x}" y="{y}" width="34" height="40" fill="{color}" '
                          f'stroke="#374151" stroke-width="0.5"/>')
-            cx = x + 8
-            cy = y + 24
-            parts.append(f'<text x="{cx}" y="{cy}" text-anchor="middle" font-size="7" '
-                         f'fill="#111827" transform="rotate(-90, {cx}, {cy})">{pin}</text>')
+            cx = x + 17
+            cy = y + 26
+            parts.append(f'<text x="{cx}" y="{cy}" text-anchor="middle" font-size="10" '
+                         f'fill="#111827">{pin}</text>')
+            label = None
+            if std in callouts:
+                label = "、".join(callouts[std])
+            elif reserved_remarks and std in reserved_remarks and reserved_remarks[std]:
+                label = "保留·" + reserved_remarks[std]
+            if label:
+                calls.append((cx, label))
+        return calls
 
-    row(BOARD_ROW1, 90)
-    row(BOARD_ROW2, 155)
-    parts.append('<text x="4" y="110" text-anchor="middle" font-size="8" fill="#374151" '
-                 'transform="rotate(-90, 4, 110)">第一排</text>')
-    parts.append('<text x="4" y="175" text-anchor="middle" font-size="8" fill="#374151" '
-                 'transform="rotate(-90, 4, 175)">第二排</text>')
+    row1_calls = row(BOARD_ROW1, 125)
+    row2_calls = row(BOARD_ROW2, 205)
 
-    parts.append(_legend_svg(20, 235))
+    # 第一排标注向上引出
+    for j, (cx, label) in enumerate(row1_calls):
+        yt = 106 if j % 2 == 0 else 88
+        parts.append(f'<polyline points="{cx},125 {cx},{yt + 7} {cx + 5},{yt + 7}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 7}" y="{yt + 15}" font-size="8" fill="#111827">{label}</text>')
+    # 第二排标注向下引出
+    for j, (cx, label) in enumerate(row2_calls):
+        yt = 288 if j % 2 == 0 else 308
+        parts.append(f'<polyline points="{cx},245 {cx},{yt + 7} {cx + 5},{yt + 7}" '
+                     f'fill="none" stroke="#374151" stroke-width="0.5"/>')
+        parts.append(f'<text x="{cx + 7}" y="{yt + 15}" font-size="8" fill="#111827">{label}</text>')
+
+    parts.append('<text x="8" y="150" text-anchor="middle" font-size="10" fill="#374151" '
+                 'transform="rotate(-90, 8, 150)">第一排</text>')
+    parts.append('<text x="8" y="225" text-anchor="middle" font-size="10" fill="#374151" '
+                 'transform="rotate(-90, 8, 225)">第二排</text>')
+
+    parts.append(_legend_svg(30, 405))
+    if reserved_remarks:
+        text = "保留: " + ", ".join(f"{p}({r})" if r else p
+                                    for p, r in sorted(reserved_remarks.items()))
+        parts.append(f'<text x="30" y="430" font-size="8" fill="#374151">{text}</text>')
     parts.append('</svg>')
     return "".join(parts)
+
+
+def show_large_pinout(svg: str) -> None:
+    """在弹窗中查看大图（突破卡片内宽度限制）。"""
+    large_svg = (svg
+                 .replace("max-width:800px", "max-width:1400px")
+                 .replace("max-width:640px", "max-width:1400px"))
+    pinout_dialog_html.set_content(large_svg)
+    pinout_dialog.open()
 
 
 def ask_export(idx: int) -> None:
@@ -714,6 +861,8 @@ def do_export() -> None:
 def download_solution(idx: int, filename: str, fmt: str) -> None:
     """按格式生成文件并触发浏览器下载。"""
     sol = current_solutions[idx]
+    reserved_remarks = {r["select"].value: (r["remark_input"].value or "").strip()
+                        for r in reserve_rows if r["select"].value}
     if fmt == "json":
         data = {
             "app": "pin_configuration_assistant",
@@ -722,16 +871,17 @@ def download_solution(idx: int, filename: str, fmt: str) -> None:
             "exported_at": datetime.datetime.now().isoformat(timespec="seconds"),
             "solution_index": idx + 1,
             "score": sol.score,
-            "reserved": sorted(current_reserved_pins()),
+            "reserved": [{"pin": r["select"].value, "remark": (r["remark_input"].value or "").strip()}
+                         for r in reserve_rows if r["select"].value],
             "rows": solution_to_export_rows(current_spec, sol),
         }
         payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
         media = "application/json"
     elif fmt == "md":
-        payload = solution_to_markdown(chip, sol, idx + 1).encode("utf-8")
+        payload = solution_to_markdown(chip, sol, idx + 1, reserved_remarks).encode("utf-8")
         media = "text/markdown"
     elif fmt == "csv":
-        payload = solution_to_csv(chip, sol, idx + 1).encode("utf-8-sig")
+        payload = solution_to_csv(chip, sol, idx + 1, reserved_remarks).encode("utf-8-sig")
         media = "text/csv"
     else:
         ui.notify("未知导出格式。", type="negative")
@@ -798,14 +948,18 @@ async def handle_import(e) -> None:
         cnt = int(r.get("count", 1))
         bg = r.get("bus_group") or "auto"
         lock_text = r.get("lock_text") or ""
-        add_row(pid, cnt, bg, lock_text)
+        remark = r.get("remark") or ""
+        add_row(pid, cnt, bg, lock_text, remark)
 
     # 恢复保留引脚（导出文件里有 reserved 字段就按文件恢复，包括为空的情况）
     reserved = data.get("reserved", None)
     if reserved is not None:
         clear_all_reserve_rows()
-        for pin in reserved:
-            add_reserve_row(pin)
+        for item in reserved:
+            if isinstance(item, dict):
+                add_reserve_row(item.get("pin"), item.get("remark") or "")
+            else:
+                add_reserve_row(item, "")
 
     ui.notify(
         f"导入成功：{len(rows_data)} 行外设（全部锁定），保留引脚 {len(reserved) if reserved is not None else '按当前页面保留'} 个。"
@@ -852,7 +1006,7 @@ def load_default_scenario() -> None:
         add_row(pid, cnt)
 
 
-def add_reserve_row(pin: str = None) -> None:
+def add_reserve_row(pin: str = None, remark: str = "") -> None:
     """添加一行保留引脚。"""
     if pin is None:
         pin = "PA0"
@@ -860,8 +1014,10 @@ def add_reserve_row(pin: str = None) -> None:
         with ui.row().classes("items-center gap-2") as row:
             num_label = ui.label("").classes("w-6 text-right text-gray-500")
             sel = ui.select(pin_options, value=pin).classes("w-96")
+            remark_input = ui.input("备注", value=remark, placeholder="如 板载LED").classes("w-36")
             del_btn = ui.button("✖").props("flat dense color=red")
-    row_data = {"row": row, "select": sel, "num_label": num_label, "del_btn": del_btn}
+    row_data = {"row": row, "select": sel, "num_label": num_label,
+                "remark_input": remark_input, "del_btn": del_btn}
     del_btn.on_click(lambda: delete_reserve_row(row_data))
     reserve_rows.append(row_data)
     renumber_reserve_rows()
@@ -947,6 +1103,8 @@ def on_solve() -> None:
     result_cards.clear()
     with result_cards:
         reserved_set = set(reserved)
+        reserved_remarks = {r["select"].value: (r["remark_input"].value or "").strip()
+                            for r in reserve_rows if r["select"].value}
         for i, sol in enumerate(solutions[:MAX_SHOWN], 1):
             with ui.expansion(f"方案 {i} —— 得分 {sol.score}").classes("w-full border rounded-lg"):
                 ui.html(solution_to_html(chip, sol, i)).classes("w-full")
@@ -956,9 +1114,13 @@ def on_solve() -> None:
                             'overflow-x:auto;font-size:13px;line-height:1.45">'
                             + html_mod.escape(steps) + "</pre>").classes("w-full")
                 with ui.expansion("🔲 芯片引脚图（LQFP48）").classes("w-full border rounded"):
-                    ui.html(chip_pinout_svg(chip, sol, reserved_set)).classes("w-full")
-                with ui.expansion("🔌 最小系统板引脚图（Blue Pill）").classes("w-full border rounded"):
-                    ui.html(board_pinout_svg(chip, sol, reserved_set)).classes("w-full")
+                    chip_svg = chip_pinout_svg(chip, sol, reserved_set, reserved_remarks)
+                    ui.html(chip_svg).classes("w-full")
+                    ui.button("🔍 查看大图", on_click=lambda svg=chip_svg: show_large_pinout(svg)).props("flat color=blue")
+                with ui.expansion("🔌 最小系统板引脚图").classes("w-full border rounded"):
+                    board_svg = board_pinout_svg(chip, sol, reserved_set, reserved_remarks)
+                    ui.html(board_svg).classes("w-full")
+                    ui.button("🔍 查看大图", on_click=lambda svg=board_svg: show_large_pinout(svg)).props("flat color=blue")
                 ui.button(f"⬇ 导出方案{i}",
                           on_click=lambda i=i: ask_export(i - 1)).props("flat color=green")
 
@@ -1016,6 +1178,10 @@ with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
         with ui.row().classes("gap-2 mt-2"):
             ui.button("确认下载", on_click=do_export).props("color=blue")
             ui.button("取消", on_click=lambda: export_dialog.close()).props("flat")
+
+    # 引脚图大图对话框
+    with ui.dialog() as pinout_dialog, ui.card().classes("w-full max-w-7xl"):
+        pinout_dialog_html = ui.html("").classes("w-full")
 
     # 页面打开时默认载入你的痛点场景和默认保留引脚
     load_default_scenario()
