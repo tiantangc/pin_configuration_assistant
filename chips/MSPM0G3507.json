@@ -1,6 +1,7 @@
 {
   "id": "MSPM0G3507",
   "name": "MSPM0G3507",
+  "board_name": "天猛星开发板",
   "package": "LQFP64",
   "family": "MSPM0G",
   "description": "TI MSPM0G3507 天猛星开发板主控，80MHz Cortex-M0+，60 GPIO",

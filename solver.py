@@ -1399,6 +1399,22 @@ def diagnose_no_solution(chip: Chip, requests: List[Request],
             "资源数量上勉强够，但引脚复用/重映射组合冲突导致无解。"
             "建议：放宽保留引脚、调整共享组，或减少同时使用的硬件外设。")
 
+    # 软件模拟建议：列出当前用到的硬件外设中可软件替代的项
+    soft = []
+    kinds = {r.kind for r in requests}
+    if "i2c" in kinds:
+        soft.append("I2C → 软件 I2C（任意 2 个 GPIO，建议 ≤100kHz）")
+    if "spi" in kinds or "spi_bus" in kinds:
+        soft.append("SPI → 软件 SPI（GPIO 翻转 SCK/MOSI/MISO，适合低速器件）")
+    if "timer_enc" in kinds:
+        soft.append("硬件编码器 → GPIO 模拟编码器（外部中断计数，牺牲高频性能）")
+    if "timer_pwm" in kinds or "timer_pwm_exclusive" in kinds:
+        soft.append("PWM → 软件 PWM（定时器中断+GPIO 翻转，适合舵机/低速步进）")
+    if "uart" in kinds or "uart_tx" in kinds or "uart_rx" in kinds:
+        soft.append("UART → 软件串口（仅建议低速 ≤9600 场景）")
+    if soft:
+        reasons.append("软件模拟建议：" + "；".join(soft) + "。")
+
     if has_locks:
         reasons.append(
             "检测到手动锁定引脚：请检查锁定引脚是否被保留、是否与其他锁定/自动分配冲突。")

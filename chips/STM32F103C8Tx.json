@@ -1,6 +1,7 @@
 {
   "id": "STM32F103C8Tx",
   "name": "STM32F103C8T6",
+  "board_name": "C8T6 最小系统板",
   "package": "LQFP48",
   "family": "STM32F1",
   "description": "STM32F103C8T6 LQFP48, 72MHz, 64KB Flash, 20KB RAM",

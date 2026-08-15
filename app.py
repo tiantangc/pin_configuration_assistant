@@ -31,7 +31,9 @@ for _fn in sorted(os.listdir(CHIP_DIR)):
     if _fn.endswith(".json"):
         _cid = _fn[:-5]
         try:
-            CHIP_OPTIONS[_cid] = load_chip(_cid).name
+            _c = load_chip(_cid)
+            _bn = _c.data.get("board_name", "")
+            CHIP_OPTIONS[_cid] = f"{_c.name}（{_bn}）" if _bn else _c.name
         except Exception:
             pass
 all_periphs: List[Dict[str, Any]] = sorted(
@@ -318,6 +320,11 @@ def refresh_preview() -> None:
     preview_html.set_content(preview_board_svg(chip, _locked_pin_labels(), _reserved_pin_info()))
 
 
+def chip_display_text(c: Chip) -> str:
+    bn = c.data.get("board_name", "")
+    return f"芯片：{c.name}（{bn}）" if bn else f"芯片：{c.name}（{c.package}）"
+
+
 def on_chip_change(e) -> None:
     """切换芯片：清空当前配置，重新加载默认场景和保留引脚。"""
     global chip
@@ -329,7 +336,7 @@ def on_chip_change(e) -> None:
     refresh_preview()
     result_html.set_content('<p style="color:#888">芯片已切换，点击“自动分配”查看结果。</p>')
     result_cards.clear()
-    chip_label.set_text(f"芯片：{chip.name}（{chip.package}）")
+    chip_label.set_text(chip_display_text(chip))
 
 
 def renumber_rows() -> None:
@@ -1525,11 +1532,13 @@ def on_solve() -> None:
 
 # ---------------------------------------------------------------- 页面
 
+ui.page_title("🔌 单片机引脚配置辅助助手")
+
 with ui.header().classes("items-center justify-between"):
     ui.label("🔌 单片机引脚配置辅助助手").classes("text-xl font-bold")
     with ui.row().classes("items-center gap-2"):
         chip_select = ui.select(CHIP_OPTIONS, value=chip.id).classes("w-64")
-        chip_label = ui.label(f"芯片：{chip.name}（{chip.package}）").classes("text-sm")
+        chip_label = ui.label(chip_display_text(chip)).classes("text-sm")
     chip_select.on_value_change(on_chip_change)
 
 with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
