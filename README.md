@@ -1,8 +1,12 @@
-# 单片机引脚配置辅助助手（M1 里程碑）
+# 单片机引脚配置辅助助手
 
 电赛电控专用：告诉它你用哪些外设，它给出 STM32F103C8T6 的最佳引脚分配方案。
 
 GitHub 仓库：https://github.com/tiantangc/pin_configuration_assistant
+
+作者：福州大学物理与信息工程学院 · 长江七号 tiantangc
+
+---
 
 ## 网页版运行方法（推荐）
 
@@ -14,78 +18,95 @@ pip install nicegui
 python app.py
 ```
 
-然后在浏览器打开 **http://127.0.0.1:8080**，页面上选外设数量、填保留引脚、点“自动分配”即可。
+浏览器打开 **http://127.0.0.1:8080** 即可使用。
 
 ## 命令行版运行方法
 
 ```bat
 cd /d F:\pin_configuration_assistant
-python cli.py
+python cli.py                        # 内置示例场景
+python cli.py --list                 # 查看支持的芯片和外设
+python cli.py --scenario "visual:1,stepper_motor:3" --top 5
 ```
 
-## 当前功能
+---
 
-- 内置 STM32F103C8T6（LQFP48）完整引脚复用数据库：UART / I2C / SPI / TIM1~TIM4 / ADC / EXTI / 重映射
-- 内置 7 个电赛常用外设模板：
-  - I2C屏幕（OLED / I2C LCD）
-  - MPU6050
-  - OpenMV（串口）
-  - 步进电机（STEP/DIR/EN，多个步进自动共用一个定时器）
-  - 小车电机（PWM + IN1/IN2）
-  - 硬件编码器（定时器编码器模式）
-  - GPIO 模拟编码器（EXTI）
-- 硬约束检查：引脚冲突、定时器通道冲突、定时器 remap 全局冲突、EXTI 线互斥、UART/SPI 实例互斥
-- 智能特性：I2C 从机自动共享总线、多路 PWM 自动成组到同一定时器、默认避开 SWD/BOOT 脚
-- 输出 Top-N 方案 + 评分 + 资源占用面板
+## 核心功能
 
-## 运行方法
+### 1. 外设与引脚配置（网页版）
 
-需要 Python 3.8+，无需安装任何第三方库。
+- 动态增删外设行，每行带序号、数量、备注
+- 外设类型下拉可选（共 21 个模板）
+- 保留引脚动态增删，带备注（默认保留 PA13/PA14、PB2、PD0/PD1）
+- 设置页实时引脚预览图：锁定=橙、保留=红、空闲=浅灰，悬停看详情
 
-```bash
-cd F:\pin_configuration_assistant
+### 2. 智能求解
 
-# 1. 看内置示例（你的痛点场景）
-python cli.py
+- 硬约束：引脚冲突、定时器通道冲突、定时器 remap 全局冲突、EXTI 线互斥、UART/SPI/CAN/I2C 实例冲突、ADC 通道冲突
+- **每一行 = 一个频率组**：行内 PWM 共用一个定时器（同频），不同行独立调速
+- **I2C 共享组**：相同组名强制共用一条总线，不同组名强制分开
+- **SPI 总线**：共享 SCK/MISO/MOSI，每个从机独立 NSS（GPIO 软件片选）
+- 板级特殊脚评分优化：优先避开板载 LED、USB、JTAG、32.768k 晶振脚
+- 无方案时输出具体原因（定时器/UART/I2C/SPI/CAN/ADC/EXTI/GPIO 哪种资源不足）
 
-# 2. 自定义外设清单
-python cli.py --scenario "i2c_screen:1,mpu6050:1,openmv:1,stepper_motor:3,car_motor:2,encoder_hw:1,encoder_gpio:1"
+### 3. 锁定引脚
 
-# 3. 保留额外引脚（比如同学已经占用 PA0）
-python cli.py --scenario "openmv:1,stepper_motor:2" --reserve PA0,PA1
+- 每行点「🔓 未锁定」进入锁定设置界面
+- 下拉框只列该角色**合法且未占用**的候选
+- 支持同角色多实例（auto 占位区分第几个）
+- 锁定引脚在结果中标注「已锁定」
 
-# 4. 查看支持的外设和芯片
-python cli.py --list
+### 4. 方案展示与导出
 
-# 5. 输出更多方案
-python cli.py --top 5
-```
+- 方案折叠卡片，显示前 12 套，每套带得分
+- 导出格式：**JSON**（可再次导入）/ **Markdown**（给人看）/ **CSV**（Excel 打开）
+- 导入方案 JSON 后所有引脚自动锁定，可继续加外设增量分配
+
+### 5. CubeMX 配置步骤
+
+- 每个方案内置「📋 CubeMX 配置步骤」：基础设置、引脚信号、外设模式、重映射提醒、最后检查
+- Markdown 导出中也包含该步骤
+
+### 6. 引脚图可视化
+
+- **芯片引脚图**（LQFP48 封装）与**最小系统板引脚图**（2×20 排针）
+- 按外设类型着色，工程图式引线标注每个引脚用途
+- 支持查看大图、下载 SVG / PNG / JPG
+
+---
+
+## 外设模板（21 个）
+
+**成品外设**：I2C屏幕、MPU6050、视觉模块、步进电机、小车电机、硬件编码器、GPIO模拟编码器、DBUS遥控器、舵机、SPI屏幕
+
+**基础功能**：GPIO输入、GPIO输出、PWM输出、UART串口、UART仅TX、UART仅RX、I2C总线、SPI总线、ADC输入、EXTI中断输入、CAN总线
+
+---
 
 ## 项目结构
 
 ```
 pin_configuration_assistant/
 ├── chips/
-│   └── STM32F103C8Tx.json     # 芯片引脚/复用数据库
-├── peripherals/
-│   ├── i2c_screen.json         # 外设模板
-│   ├── mpu6050.json
-│   ├── openmv.json
-│   ├── stepper_motor.json
-│   ├── car_motor.json
-│   ├── encoder_hw.json
-│   └── encoder_gpio.json
-├── solver.py                   # 求解引擎
-├── cli.py                      # 命令行入口
-├── app.py                      # 网页版入口（NiceGUI）
+│   └── STM32F103C8Tx.json     # 芯片引脚/复用/封装数据库
+├── peripherals/               # 21 个外设模板（JSON）
+├── solver.py                  # 求解引擎（约束/评分/诊断）
+├── cli.py                     # 命令行入口
+├── app.py                     # 网页版入口（NiceGUI）
 ├── requirements.txt
-├── README.md                   # 使用说明
-└── ROADMAP.md                  # 项目路线图与开发备忘
+├── README.md                  # 本文件
+└── ROADMAP.md                 # 路线图与开发备忘
 ```
 
-## 下一步计划（M2）
+---
 
-- 引脚锁定后重新求解
-- 生成 CubeMX 配置步骤清单
-- 导出 Markdown/CSV 引脚表
-- 芯片引脚图可视化高亮
+## 下一步计划
+
+- [ ] MSPM0G3507 天猛星开发板支持
+- [ ] 电赛场景模板一键套用（智能车/无人机/电源题）
+- [ ] 方案保存/命名/对比
+- [ ] 软件模拟建议（软件 I2C / 软件 PWM / GPIO 模拟编码器）
+- [ ] F407 支持（最后）
+
+详见 ROADMAP.md。
+
