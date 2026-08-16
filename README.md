@@ -8,7 +8,19 @@ GitHub 仓库：https://github.com/tiantangc/pin_configuration_assistant
 
 ---
 
-## 网页版运行方法（推荐）
+## 零安装版（Windows 直接运行，推荐）
+
+不用装 Python。到 GitHub Releases 下载最新版 `PinConfigAssistant.exe`，双击即可：
+
+- 首次运行会自动打开浏览器（http://127.0.0.1:8080）；
+- 用完点右上角「❌ 退出」关闭程序；
+- 浏览器误关了但程序还在跑时，再双击 exe 会自动弹出已有网页。
+
+> 注：PyInstaller 打包的单文件 exe 可能被杀毒软件误报，点「仍要运行 / 添加信任」即可。
+
+---
+
+## 网页版运行方法（源码，开发者）
 
 需要 Python 3.8+。
 
