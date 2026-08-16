@@ -16,6 +16,9 @@ import io
 import json
 import os
 import re
+import socket
+import sys
+import webbrowser
 from typing import Any, Dict, List, Tuple
 
 from nicegui import ui
@@ -101,7 +104,19 @@ compare_dialog = None
 compare_select_a = None
 compare_select_b = None
 
-SAVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_solutions")
+# 打包成 exe 后方案要存到 exe 旁边（sys._MEIPASS 是临时解压目录，不可持久化）
+if getattr(sys, "_MEIPASS", None):
+    _APP_DIR = os.path.dirname(sys.executable)
+else:
+    _APP_DIR = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(_APP_DIR, "saved_solutions")
+
+# 无控制台 exe（--noconsole）下 sys.stdout/stderr 为 None，uvicorn 的日志 formatter 调 .isatty() 会崩。
+# 兜底：stdout 丢弃，stderr 追加到 exe 旁的 error.log，便于网友反馈排查。
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.path.join(_APP_DIR, "error.log"), "a", encoding="utf-8")
 
 # 引脚下拉选项：引脚名 + 默认功能备注（随当前芯片动态生成）
 def get_pin_options() -> Dict[str, str]:
@@ -1755,132 +1770,168 @@ def on_solve() -> None:
                           on_click=lambda i=i: ask_export(i - 1)).props("flat color=green")
 
 
+
+def quit_app() -> None:
+    """退出程序：先尝试关浏览器标签页，再退出进程。"""
+    ui.run_javascript('window.close()')
+    ui.timer(0.5, lambda: os._exit(0), once=True)
+
+
+def _port_in_use(host: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        return s.connect_ex((host, port)) == 0
+
+
 # ---------------------------------------------------------------- 页面
 
-ui.page_title("🔌 单片机引脚配置辅助助手")
 
-with ui.header().classes("items-center justify-between"):
-    ui.label("🔌 单片机引脚配置辅助助手").classes("text-xl font-bold")
-    with ui.row().classes("items-center gap-2"):
-        chip_select = ui.select(CHIP_OPTIONS, value=chip.id).classes("w-64")
-        chip_label = ui.label(chip_display_text(chip)).classes("text-sm")
-    chip_select.on_value_change(on_chip_change)
+def main() -> None:
+    global chip_select, chip_label
+    global rows_container, preview_html, reserve_rows_container
+    global result_html, result_cards
+    global export_dialog, export_name_input, export_format_select
+    global save_dialog, save_name_input
+    global load_dialog, load_select
+    global compare_dialog, compare_select_a, compare_select_b
+    global delete_dialog, delete_select
+    global pinout_dialog, pinout_dialog_html
+    global pinout_dl_dialog, pinout_dl_name_input, pinout_dl_fmt_select
 
-with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
 
-    ui.markdown("#### 第一步：添加外设/基础功能")
-    with ui.card().classes("w-full p-3"):
-        with ui.column().classes("w-full gap-2") as rows_container:
+    ui.page_title("🔌 单片机引脚配置辅助助手")
+
+    with ui.header().classes("items-center justify-between"):
+        ui.label("🔌 单片机引脚配置辅助助手").classes("text-xl font-bold")
+        with ui.row().classes("items-center gap-2"):
+            chip_select = ui.select(CHIP_OPTIONS, value=chip.id).classes("w-64")
+            chip_label = ui.label(chip_display_text(chip)).classes("text-sm")
+            ui.button("❌ 退出", on_click=quit_app).props("flat color=red")
+        chip_select.on_value_change(on_chip_change)
+
+    with ui.column().classes("w-full max-w-6xl mx-auto p-4 gap-4"):
+
+        ui.markdown("#### 第一步：添加外设/基础功能")
+        with ui.card().classes("w-full p-3"):
+            with ui.column().classes("w-full gap-2") as rows_container:
+                pass
+            with ui.row().classes("gap-2 mt-3"):
+                ui.button("➕ 添加外设", on_click=lambda: add_row()).props("flat color=blue")
+                ui.button("载入示例场景", on_click=load_default_scenario).props("flat color=green")
+                ui.button("清空", on_click=clear_all_rows).props("flat color=grey")
+                ui.button("💾 保存配置", on_click=lambda: save_dialog.open()).props("flat color=teal")
+                ui.button("📂 加载配置", on_click=open_load_dialog).props("flat color=purple")
+                ui.button("🆚 对比配置", on_click=open_compare_dialog).props("flat color=brown")
+                ui.button("🗑️ 删除配置", on_click=open_delete_dialog).props("flat color=red")
+                ui.upload(on_upload=handle_import, auto_upload=True,
+                          label="📥 导入方案 JSON").props("flat color=orange")
+            ui.markdown(
+                "每一行：下拉框选外设/功能，数量填几个就加几个（如 GPIO输出 × 3、UART仅RX × 1）。"
+                "**PWM 类（步进/电机/舵机/PWM）每一行 = 一个频率组**：组内共用一颗定时器（同频率），不同行独立调速。"
+                "**I2C/SPI 每一行 = 一条总线**：数量 = 挂在总线上的设备数。"
+                "**I2C 共享组**：选相同组名（A/B/C/D）的多行强制共用一条总线，不同组名强制分开，选「自动」由求解器决定。"
+                "**锁定引脚**：点每行的「🔓 未锁定」按钮进入设置，为每个角色选「自动」或具体引脚/候选，"
+                "下拉框只列合法选项。"
+            ).classes("text-xs text-gray-500 mt-2")
+
+        ui.markdown("#### 引脚预览（锁定 / 保留）")
+        with ui.card().classes("w-full p-3"):
+            preview_html = ui.html("").classes("w-full")
+            ui.markdown(
+                "橙色=已锁定，红色=保留，浅灰=空闲；鼠标悬停引脚查看具体信息。"
+            ).classes("text-xs text-gray-500 mt-2")
+
+        ui.markdown("#### 第二步：设置保留引脚（分配时绝不使用这些引脚）")
+        with ui.card().classes("w-full p-3"):
+            with ui.column().classes("w-full gap-2") as reserve_rows_container:
+                pass
+            with ui.row().classes("gap-2 mt-3"):
+                ui.button("➕ 添加保留引脚", on_click=lambda: add_reserve_row()).props("flat color=blue")
+                ui.button("恢复默认保留", on_click=load_default_reserve).props("flat color=green")
+            ui.markdown(
+                "默认已保留 PA13/PA14（SWD 调试口）、PB2（BOOT1）、PD0/PD1（晶振专用）。"
+                "如果确定不需要某行，点 ✖ 删除即可。"
+            ).classes("text-xs text-gray-500 mt-2")
+
+        ui.button("自动分配", on_click=on_solve).classes("bg-blue-500 text-white text-lg px-6 py-2")
+
+        result_html = ui.html("<p style='color:#888'>点击“自动分配”查看结果。</p>").classes("w-full")
+        with ui.column().classes("w-full gap-2") as result_cards:
             pass
-        with ui.row().classes("gap-2 mt-3"):
-            ui.button("➕ 添加外设", on_click=lambda: add_row()).props("flat color=blue")
-            ui.button("载入示例场景", on_click=load_default_scenario).props("flat color=green")
-            ui.button("清空", on_click=clear_all_rows).props("flat color=grey")
-            ui.button("💾 保存配置", on_click=lambda: save_dialog.open()).props("flat color=teal")
-            ui.button("📂 加载配置", on_click=open_load_dialog).props("flat color=purple")
-            ui.button("🆚 对比配置", on_click=open_compare_dialog).props("flat color=brown")
-            ui.button("🗑️ 删除配置", on_click=open_delete_dialog).props("flat color=red")
-            ui.upload(on_upload=handle_import, auto_upload=True,
-                      label="📥 导入方案 JSON").props("flat color=orange")
-        ui.markdown(
-            "每一行：下拉框选外设/功能，数量填几个就加几个（如 GPIO输出 × 3、UART仅RX × 1）。"
-            "**PWM 类（步进/电机/舵机/PWM）每一行 = 一个频率组**：组内共用一颗定时器（同频率），不同行独立调速。"
-            "**I2C/SPI 每一行 = 一条总线**：数量 = 挂在总线上的设备数。"
-            "**I2C 共享组**：选相同组名（A/B/C/D）的多行强制共用一条总线，不同组名强制分开，选「自动」由求解器决定。"
-            "**锁定引脚**：点每行的「🔓 未锁定」按钮进入设置，为每个角色选「自动」或具体引脚/候选，"
-            "下拉框只列合法选项。"
-        ).classes("text-xs text-gray-500 mt-2")
 
-    ui.markdown("#### 引脚预览（锁定 / 保留）")
-    with ui.card().classes("w-full p-3"):
-        preview_html = ui.html("").classes("w-full")
-        ui.markdown(
-            "橙色=已锁定，红色=保留，浅灰=空闲；鼠标悬停引脚查看具体信息。"
-        ).classes("text-xs text-gray-500 mt-2")
+        # 水印
+        ui.label("福州大学物理与信息工程学院 · 长江七号 tiantangc") \
+            .classes("w-full text-center text-gray-400 text-xs mt-4")
 
-    ui.markdown("#### 第二步：设置保留引脚（分配时绝不使用这些引脚）")
-    with ui.card().classes("w-full p-3"):
-        with ui.column().classes("w-full gap-2") as reserve_rows_container:
-            pass
-        with ui.row().classes("gap-2 mt-3"):
-            ui.button("➕ 添加保留引脚", on_click=lambda: add_reserve_row()).props("flat color=blue")
-            ui.button("恢复默认保留", on_click=load_default_reserve).props("flat color=green")
-        ui.markdown(
-            "默认已保留 PA13/PA14（SWD 调试口）、PB2（BOOT1）、PD0/PD1（晶振专用）。"
-            "如果确定不需要某行，点 ✖ 删除即可。"
-        ).classes("text-xs text-gray-500 mt-2")
+        # 导出文件名确认对话框
+        with ui.dialog() as export_dialog, ui.card().classes("w-96"):
+            ui.label("确认导出的文件名和格式").classes("font-bold")
+            export_name_input = ui.input("文件名", value="").classes("w-full")
+            export_format_select = ui.select(EXPORT_FORMATS, value="json").classes("w-full")
+            with ui.row().classes("gap-2 mt-2"):
+                ui.button("确认下载", on_click=do_export).props("color=blue")
+                ui.button("取消", on_click=lambda: export_dialog.close()).props("flat")
 
-    ui.button("自动分配", on_click=on_solve).classes("bg-blue-500 text-white text-lg px-6 py-2")
+        # 保存配置对话框
+        with ui.dialog() as save_dialog, ui.card().classes("w-96"):
+            ui.label("保存当前配置").classes("font-bold")
+            save_name_input = ui.input("方案名称", value="", placeholder="如 智能车底盘").classes("w-full")
+            with ui.row().classes("gap-2 mt-2"):
+                ui.button("保存", on_click=save_config).props("color=teal")
+                ui.button("取消", on_click=lambda: save_dialog.close()).props("flat")
 
-    result_html = ui.html("<p style='color:#888'>点击“自动分配”查看结果。</p>").classes("w-full")
-    with ui.column().classes("w-full gap-2") as result_cards:
-        pass
+        # 加载配置对话框
+        with ui.dialog() as load_dialog, ui.card().classes("w-96"):
+            ui.label("加载已存方案").classes("font-bold")
+            load_select = ui.select({"": "（暂无方案）"}, value="").classes("w-full")
+            with ui.row().classes("gap-2 mt-2"):
+                ui.button("加载", on_click=load_config).props("color=purple")
+                ui.button("取消", on_click=lambda: load_dialog.close()).props("flat")
 
-    # 水印
-    ui.label("福州大学物理与信息工程学院 · 长江七号 tiantangc") \
-        .classes("w-full text-center text-gray-400 text-xs mt-4")
+        # 对比配置对话框
+        with ui.dialog() as compare_dialog, ui.card().classes("w-96"):
+            ui.label("对比两个已存方案").classes("font-bold")
+            compare_select_a = ui.select({"": "（暂无方案）"}, value="", label="方案 A").classes("w-full")
+            compare_select_b = ui.select({"": "（暂无方案）"}, value="", label="方案 B").classes("w-full")
+            with ui.row().classes("gap-2 mt-2"):
+                ui.button("对比", on_click=compare_configs).props("color=brown")
+                ui.button("取消", on_click=lambda: compare_dialog.close()).props("flat")
 
-    # 导出文件名确认对话框
-    with ui.dialog() as export_dialog, ui.card().classes("w-96"):
-        ui.label("确认导出的文件名和格式").classes("font-bold")
-        export_name_input = ui.input("文件名", value="").classes("w-full")
-        export_format_select = ui.select(EXPORT_FORMATS, value="json").classes("w-full")
-        with ui.row().classes("gap-2 mt-2"):
-            ui.button("确认下载", on_click=do_export).props("color=blue")
-            ui.button("取消", on_click=lambda: export_dialog.close()).props("flat")
+        # 删除配置对话框
+        with ui.dialog() as delete_dialog, ui.card().classes("w-96"):
+            ui.label("删除已存方案").classes("font-bold")
+            delete_select = ui.select({"": "（暂无方案）"}, value="").classes("w-full")
+            with ui.row().classes("gap-2 mt-2"):
+                ui.button("删除", on_click=delete_config).props("color=red")
+                ui.button("取消", on_click=lambda: delete_dialog.close()).props("flat")
 
-    # 保存配置对话框
-    with ui.dialog() as save_dialog, ui.card().classes("w-96"):
-        ui.label("保存当前配置").classes("font-bold")
-        save_name_input = ui.input("方案名称", value="", placeholder="如 智能车底盘").classes("w-full")
-        with ui.row().classes("gap-2 mt-2"):
-            ui.button("保存", on_click=save_config).props("color=teal")
-            ui.button("取消", on_click=lambda: save_dialog.close()).props("flat")
+        # 引脚图大图对话框
+        with ui.dialog() as pinout_dialog, ui.card().classes("w-full max-w-7xl"):
+            pinout_dialog_html = ui.html("").classes("w-full")
 
-    # 加载配置对话框
-    with ui.dialog() as load_dialog, ui.card().classes("w-96"):
-        ui.label("加载已存方案").classes("font-bold")
-        load_select = ui.select({"": "（暂无方案）"}, value="").classes("w-full")
-        with ui.row().classes("gap-2 mt-2"):
-            ui.button("加载", on_click=load_config).props("color=purple")
-            ui.button("取消", on_click=lambda: load_dialog.close()).props("flat")
+        # 引脚图下载文件名确认对话框
+        with ui.dialog() as pinout_dl_dialog, ui.card().classes("w-96"):
+            ui.label("确认引脚图文件名和格式").classes("font-bold")
+            pinout_dl_name_input = ui.input("文件名", value="").classes("w-full")
+            pinout_dl_fmt_select = ui.select(
+                {"svg": "SVG（矢量，可无限放大）", "png": "PNG（高清位图）", "jpg": "JPG（通用图片）"},
+                value="svg").classes("w-full")
+            with ui.row().classes("gap-2 mt-2"):
+                ui.button("确认下载", on_click=do_download_pinout).props("color=blue")
+                ui.button("取消", on_click=lambda: pinout_dl_dialog.close()).props("flat")
 
-    # 对比配置对话框
-    with ui.dialog() as compare_dialog, ui.card().classes("w-96"):
-        ui.label("对比两个已存方案").classes("font-bold")
-        compare_select_a = ui.select({"": "（暂无方案）"}, value="", label="方案 A").classes("w-full")
-        compare_select_b = ui.select({"": "（暂无方案）"}, value="", label="方案 B").classes("w-full")
-        with ui.row().classes("gap-2 mt-2"):
-            ui.button("对比", on_click=compare_configs).props("color=brown")
-            ui.button("取消", on_click=lambda: compare_dialog.close()).props("flat")
-
-    # 删除配置对话框
-    with ui.dialog() as delete_dialog, ui.card().classes("w-96"):
-        ui.label("删除已存方案").classes("font-bold")
-        delete_select = ui.select({"": "（暂无方案）"}, value="").classes("w-full")
-        with ui.row().classes("gap-2 mt-2"):
-            ui.button("删除", on_click=delete_config).props("color=red")
-            ui.button("取消", on_click=lambda: delete_dialog.close()).props("flat")
-
-    # 引脚图大图对话框
-    with ui.dialog() as pinout_dialog, ui.card().classes("w-full max-w-7xl"):
-        pinout_dialog_html = ui.html("").classes("w-full")
-
-    # 引脚图下载文件名确认对话框
-    with ui.dialog() as pinout_dl_dialog, ui.card().classes("w-96"):
-        ui.label("确认引脚图文件名和格式").classes("font-bold")
-        pinout_dl_name_input = ui.input("文件名", value="").classes("w-full")
-        pinout_dl_fmt_select = ui.select(
-            {"svg": "SVG（矢量，可无限放大）", "png": "PNG（高清位图）", "jpg": "JPG（通用图片）"},
-            value="svg").classes("w-full")
-        with ui.row().classes("gap-2 mt-2"):
-            ui.button("确认下载", on_click=do_download_pinout).props("color=blue")
-            ui.button("取消", on_click=lambda: pinout_dl_dialog.close()).props("flat")
-
-    # 页面打开时默认载入你的痛点场景和默认保留引脚
-    load_default_scenario()
-    load_default_reserve()
-    refresh_saved_options()
+        # 页面打开时默认载入你的痛点场景和默认保留引脚
+        load_default_scenario()
+        load_default_reserve()
+        refresh_saved_options()
 
 
-ui.run(host="127.0.0.1", port=8080, reload=False)
+
+
+
+# 单实例：打包成 exe 后，如果 8080 已被占用（程序已在跑），直接打开浏览器指向已有实例并退出本次启动
+if getattr(sys, "_MEIPASS", None) and _port_in_use("127.0.0.1", 8080):
+    webbrowser.open("http://127.0.0.1:8080")
+    sys.exit(0)
+
+ui.run(host="127.0.0.1", port=8080, reload=False, root=main)

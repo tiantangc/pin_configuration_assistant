@@ -4,6 +4,10 @@ __pycache__/
 *.pyo
 .pytest_cache/
 
+# PyInstaller 打包产物
+build/
+dist/
+
 # 虚拟环境
 .venv/
 venv/

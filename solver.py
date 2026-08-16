@@ -21,7 +21,8 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 打包成 exe 时资源在 PyInstaller 解压目录（sys._MEIPASS），源码运行时在脚本目录
+BASE_DIR = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
 CHIP_DIR = os.path.join(BASE_DIR, "chips")
 PERIPH_DIR = os.path.join(BASE_DIR, "peripherals")
 
